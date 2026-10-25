@@ -81,7 +81,7 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
       <div class="flex items-center gap-3">
         <div class="w-8 h-8 rounded-lg bg-accent-teal text-white flex items-center justify-center font-bold text-sm shadow-sm">
-          🛡️
+          <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         </div>
         <div>
           <div class="flex items-center gap-2">
@@ -136,7 +136,7 @@
       <!-- Run Action -->
       <div class="flex gap-3">
         <button id="runBtn" class="flex-1 py-2.5 px-4 rounded-md bg-accent-teal hover:bg-[#0D655E] text-white font-semibold text-xs tracking-wide shadow-sm transition flex items-center justify-center gap-2">
-          <span>⚡ Run Protection Pipeline</span>
+          <span>Run protection pipeline</span>
         </button>
         <button id="resetBtn" class="py-2.5 px-4 rounded-md border border-border-default hover:bg-surface-muted text-content-secondary font-medium text-xs transition">
           Reset Example
@@ -147,22 +147,22 @@
     <!-- Live Performance Metrics Row -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
       <div class="bg-surface-card border border-border-default rounded-lg p-3 shadow-sm">
-        <div class="text-[11px] font-semibold uppercase tracking-wider text-content-secondary mb-1">De-Identification Latency</div>
+        <div class="text-[11px] font-medium text-content-secondary mb-1">De-identification latency</div>
         <div id="metricDehydrate" class="text-xl font-bold font-mono text-content-primary">0.08 ms</div>
         <div class="text-[10px] text-content-tertiary mt-0.5">Regex & checksum engine</div>
       </div>
       <div class="bg-surface-card border border-border-default rounded-lg p-3 shadow-sm">
-        <div class="text-[11px] font-semibold uppercase tracking-wider text-content-secondary mb-1">Tool Hydration Latency</div>
+        <div class="text-[11px] font-medium text-content-secondary mb-1">Tool hydration latency</div>
         <div id="metricHydrate" class="text-xl font-bold font-mono text-content-primary">0.02 ms</div>
         <div class="text-[10px] text-content-tertiary mt-0.5">@vault_guard parameter restore</div>
       </div>
       <div class="bg-surface-card border border-border-default rounded-lg p-3 shadow-sm">
-        <div class="text-[11px] font-semibold uppercase tracking-wider text-content-secondary mb-1">Stream Chunk Latency</div>
+        <div class="text-[11px] font-medium text-content-secondary mb-1">Stream chunk latency</div>
         <div class="text-xl font-bold font-mono text-content-primary">0.05 ms</div>
         <div class="text-[10px] text-content-tertiary mt-0.5">Holdback buffer per chunk</div>
       </div>
       <div class="bg-surface-card border border-border-default rounded-lg p-3 shadow-sm">
-        <div class="text-[11px] font-semibold uppercase tracking-wider text-content-secondary mb-1">Session Vault Mappings</div>
+        <div class="text-[11px] font-medium text-content-secondary mb-1">Session vault mappings</div>
         <div id="metricCount" class="text-xl font-bold font-mono text-content-primary">5 active</div>
         <div class="text-[10px] text-content-tertiary mt-0.5">SQLite in-memory with TTL</div>
       </div>
@@ -175,8 +175,8 @@
       <div class="bg-surface-card border border-border-default rounded-xl p-4 shadow-sm flex flex-col justify-between space-y-4">
         <div class="space-y-3.5">
           <div class="flex items-center justify-between border-b border-border-subtle pb-2.5">
-            <div class="text-xs font-bold text-content-primary">01 / Trusted Input & Local Tool</div>
-            <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-accent-red-bg text-accent-red border border-accent-red-border">Trusted Perimeter</span>
+            <div class="text-xs font-bold text-content-primary">1. Trusted Input & Local Tool</div>
+            <span class="text-[10px] font-medium px-2 py-0.5 rounded bg-accent-red-bg text-accent-red border border-accent-red-border">Trusted Boundary</span>
           </div>
 
           <div>
@@ -204,8 +204,8 @@
       <div class="bg-surface-card border border-border-default rounded-xl p-4 shadow-sm flex flex-col justify-between space-y-4">
         <div class="space-y-3.5">
           <div class="flex items-center justify-between border-b border-border-subtle pb-2.5">
-            <div class="text-xs font-bold text-content-primary">02 / Cloud-Safe Wire Payload</div>
-            <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-accent-teal-bg text-accent-teal border border-accent-teal-border">Zero PII Leakage</span>
+            <div class="text-xs font-bold text-content-primary">2. Cloud LLM Wire Payload</div>
+            <span class="text-[10px] font-medium px-2 py-0.5 rounded bg-accent-teal-bg text-accent-teal border border-accent-teal-border">Zero Leakage</span>
           </div>
 
           <div>
@@ -229,8 +229,8 @@
       <div class="bg-surface-card border border-border-default rounded-xl p-4 shadow-sm flex flex-col justify-between space-y-4">
         <div class="space-y-3.5">
           <div class="flex items-center justify-between border-b border-border-subtle pb-2.5">
-            <div class="text-xs font-bold text-content-primary">03 / Ephemeral Vault & Mappings</div>
-            <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-accent-blue-bg text-accent-blue border border-accent-blue-border">In-Memory / SQLite</span>
+            <div class="text-xs font-bold text-content-primary">3. Ephemeral Key-Value Store</div>
+            <span class="text-[10px] font-medium px-2 py-0.5 rounded bg-accent-blue-bg text-accent-blue border border-accent-blue-border">In-Memory SQLite</span>
           </div>
 
           <div>
