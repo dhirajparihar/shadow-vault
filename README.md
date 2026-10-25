@@ -1,4 +1,8 @@
-# shadow-vault
+<p align="center">
+  <img src="assets/logo.svg" alt="ShadowVault Logo" width="76" height="76">
+</p>
+
+<h1 align="center">ShadowVault</h1>
 
 <p align="center">
   <strong>A bi-directional, format-preserving reversible PII proxy for AI agents, LangChain/LangGraph, and Model Context Protocol (MCP) tools.</strong>
