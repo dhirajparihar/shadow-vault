@@ -322,6 +322,34 @@ class VaultStore:
             cursor.execute("SELECT DISTINCT session_id FROM mappings ORDER BY session_id")
             return [row[0] for row in cursor.fetchall()]
 
+    def get_session_records(self, session_id: str) -> list[dict[str, Any]]:
+        """Return all mapping records for a session as dictionaries.
+
+        Args:
+            session_id: Target session identifier.
+
+        Returns:
+            List of dictionaries with record metadata.
+        """
+        with self._lock:
+            self._check_open()
+            cursor = self._conn.cursor()
+            cursor.execute(
+                "SELECT session_id, entity_type, real_val, synth_val, created_at "
+                "FROM mappings WHERE session_id = ? ORDER BY created_at ASC",
+                (session_id,),
+            )
+            return [
+                {
+                    "session_id": row[0],
+                    "entity_type": row[1],
+                    "real_val": row[2],
+                    "synth_val": row[3],
+                    "created_at": row[4],
+                }
+                for row in cursor.fetchall()
+            ]
+
     def close(self) -> None:
         """Close database connection."""
         with self._lock:

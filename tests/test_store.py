@@ -266,3 +266,25 @@ def test_close_and_context_manager() -> None:
     assert store.is_closed
     with pytest.raises(RuntimeError, match="closed"):
         store.get_session_map("any")
+
+
+def test_get_session_records() -> None:
+    """Test retrieving session records with metadata."""
+    store = VaultStore()
+    sess = "records_test"
+
+    store.get_or_create(sess, "EMAIL", "alice@example.com", lambda et, h: f"u_{h}@shadow.vault")
+    store.get_or_create(sess, "PHONE", "+15551234567", lambda et, h: f"+19000{h[:5]}")
+
+    records = store.get_session_records(sess)
+    assert len(records) == 2
+    assert records[0]["session_id"] == sess
+    assert records[0]["entity_type"] == "EMAIL"
+    assert records[0]["real_val"] == "alice@example.com"
+    assert "shadow.vault" in records[0]["synth_val"]
+    assert "created_at" in records[0]
+
+    assert records[1]["entity_type"] == "PHONE"
+    assert records[1]["real_val"] == "+15551234567"
+    store.close()
+

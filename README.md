@@ -92,6 +92,23 @@ python examples/demo_agent_roundtrip.py
 
 ---
 
+## 🎮 Interactive Web Playground
+
+Launch the interactive 3-panel visual playground with real-time token highlighting and latency counters:
+
+```bash
+pip install streamlit
+streamlit run playground/app.py
+```
+
+- **Panel 1 (User & Local MCP Tool)**: Displays raw prompt with real PII and verifies `@vault_guard` restoring real values before local tools execute.
+- **Panel 2 (What Cloud LLMs See)**: Highlights format-preserving synthetic `@shadow.vault` tokens in green over the wire.
+- **Panel 3 (Live SQLite Vault)**: Inspects the live in-memory mapping table, BLAKE2b deduplication, and sub-millisecond latency counters.
+- **Pre-Loaded Scenarios**: Includes *Fintech UPI/PAN Refund Agent*, *Healthcare Patient Booking Agent*, and *DevOps API Key Log Analyzer*.
+- **1-Click Deploy**: Deployable for free on **Hugging Face Spaces** or **Render** (see [playground/README.md](file:///c:/Users/HP/Desktop/projectios/shadow-vault/playground/README.md)).
+
+---
+
 ## Supported Entities (Global + India)
 
 `shadow-vault` uses zero-dependency regexes coupled with **strict mathematical checksum algorithms** so random numbers are never falsely flagged:
