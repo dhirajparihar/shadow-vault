@@ -596,6 +596,7 @@ with st.sidebar:
     if selected_scenario_name != st.session_state.active_scenario_name:
         st.session_state.active_scenario_name = selected_scenario_name
         st.session_state.prompt_text = SCENARIOS[selected_scenario_name]["prompt"]
+        st.session_state.prompt_input_field = SCENARIOS[selected_scenario_name]["prompt"]
         st.session_state.pipeline_result = None
         st.rerun()
 
@@ -722,6 +723,7 @@ with st.container():
     with btn_col2:
         if st.button("Reset Example", use_container_width=True):
             st.session_state.prompt_text = current_scenario["prompt"]
+            st.session_state.prompt_input_field = current_scenario["prompt"]
             st.session_state.pipeline_result = None
             st.rerun()
 
