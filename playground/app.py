@@ -536,11 +536,32 @@ if "active_scenario_name" not in st.session_state:
     st.session_state.active_scenario_name = list(SCENARIOS.keys())[0]
     st.session_state.prompt_text = SCENARIOS[st.session_state.active_scenario_name]["prompt"]
 
+if "prompt_input_field" not in st.session_state:
+    st.session_state.prompt_input_field = st.session_state.prompt_text
+
 if "pipeline_result" not in st.session_state:
     st.session_state.pipeline_result = None
 
 if "confirm_clear" not in st.session_state:
     st.session_state.confirm_clear = False
+
+
+def on_scenario_select():
+    """Callback triggered before widgets instantiate on scenario change."""
+    chosen = st.session_state.get("scenario_selector_key", st.session_state.active_scenario_name)
+    st.session_state.active_scenario_name = chosen
+    scenario_prompt = SCENARIOS[chosen]["prompt"]
+    st.session_state.prompt_text = scenario_prompt
+    st.session_state.prompt_input_field = scenario_prompt
+    st.session_state.pipeline_result = None
+
+
+def on_reset_prompt_click():
+    """Callback triggered before widgets instantiate on reset button click."""
+    scenario_prompt = SCENARIOS[st.session_state.active_scenario_name]["prompt"]
+    st.session_state.prompt_text = scenario_prompt
+    st.session_state.prompt_input_field = scenario_prompt
+    st.session_state.pipeline_result = None
 
 store: VaultStore = st.session_state.store
 vault: ShadowVault = st.session_state.vault
@@ -615,20 +636,14 @@ with st.sidebar:
 
     st.markdown('<div class="sidebar-heading">Active Scenario</div>', unsafe_allow_html=True)
     scenario_keys = list(SCENARIOS.keys())
-    selected_scenario_name = st.selectbox(
+    st.selectbox(
         label="Scenario Selector",
         options=scenario_keys,
         index=scenario_keys.index(st.session_state.active_scenario_name) if st.session_state.active_scenario_name in scenario_keys else 0,
         label_visibility="collapsed",
+        key="scenario_selector_key",
+        on_change=on_scenario_select,
     )
-
-    # Clean scenario state synchronization
-    if selected_scenario_name != st.session_state.active_scenario_name:
-        st.session_state.active_scenario_name = selected_scenario_name
-        st.session_state.prompt_text = SCENARIOS[selected_scenario_name]["prompt"]
-        st.session_state.prompt_input_field = SCENARIOS[selected_scenario_name]["prompt"]
-        st.session_state.pipeline_result = None
-        st.rerun()
 
     current_scenario = SCENARIOS[st.session_state.active_scenario_name]
     st.markdown(
@@ -740,7 +755,6 @@ st.markdown(
 # Text Area inside the workbench
 user_prompt = st.text_area(
     label="Agent Prompt Input",
-    value=st.session_state.prompt_text,
     height=95,
     label_visibility="collapsed",
     key="prompt_input_field",
@@ -752,11 +766,7 @@ action_col1, action_col2, action_spacer = st.columns([0.30, 0.18, 0.52])
 with action_col1:
     run_requested = st.button("Run protection pipeline", type="primary", use_container_width=True)
 with action_col2:
-    if st.button("Reset example", use_container_width=True):
-        st.session_state.prompt_text = current_scenario["prompt"]
-        st.session_state.prompt_input_field = current_scenario["prompt"]
-        st.session_state.pipeline_result = None
-        st.rerun()
+    st.button("Reset example", on_click=on_reset_prompt_click, use_container_width=True)
 
 st.markdown("<div style='margin-bottom: 1.25rem;'></div>", unsafe_allow_html=True)
 
