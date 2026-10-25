@@ -33,7 +33,7 @@ class ShadowVault:
         else:
             self.store = VaultStore(db_path=db_path, ttl_seconds=ttl_seconds)
 
-    def dehydrate(self, data: Any, session_id: str = "default") -> Any:
+    def dehydrate(self, data: Any, session_id: str = "default", ttl: float | None = None) -> Any:
         """Recursively scan data and substitute real PII with format-preserving synthetic tokens.
 
         Traverses strings, dictionaries, lists, tuples, and Pydantic BaseModel instances.
@@ -42,10 +42,14 @@ class ShadowVault:
         Args:
             data: Arbitrary data structure containing potential PII.
             session_id: Session identifier to scope token mappings.
+            ttl: Optional TTL in seconds for session storage.
 
         Returns:
             Dehydrated data structure with sensitive entities replaced by synthetic tokens.
         """
+        if ttl is not None and hasattr(self.store, "ttl_seconds"):
+            self.store.ttl_seconds = ttl
+
         if data is None:
             return None
 

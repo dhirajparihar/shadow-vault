@@ -379,7 +379,8 @@ def highlight_synthetic_tokens(text: str, session_map: dict[str, str]) -> str:
 if run_button or st.session_state.last_run is not None:
     # 1. Latency Benchmark & Execution
     t0 = time.perf_counter()
-    dehydrated_prompt = vault.dehydrate(prompt_text, session_id=session_id, ttl=ttl_seconds)
+    store.ttl_seconds = ttl_seconds
+    dehydrated_prompt = vault.dehydrate(prompt_text, session_id=session_id)
     dehydrate_latency_ms = (time.perf_counter() - t0) * 1000.0
 
     # Retrieve current session mappings
