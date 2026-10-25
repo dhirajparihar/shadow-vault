@@ -1,0 +1,9 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Shadow Vault Documentation & Contributing Guide
+    url: https://github.com/dhirajparihar/shadow-vault/blob/main/CONTRIBUTING.md
+    about: Read our guide on how to add a regional PII detector in under 20 lines of code.
+  - name: Benchmark & Performance Inquiries
+    url: https://github.com/dhirajparihar/shadow-vault/blob/main/benchmarks/benchmark_results.md
+    about: View latency, throughput, and memory footprint benchmarks.
+

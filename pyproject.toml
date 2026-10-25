@@ -1,0 +1,84 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "shadow-vault"
+version = "0.3.0"
+description = "Bi-directional, format-preserving reversible PII proxy for AI agents, LangChain/LangGraph, and MCP tools."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [
+    { name = "Shadow Vault Contributors" },
+]
+keywords = [
+    "pii",
+    "privacy",
+    "anonymization",
+    "langchain",
+    "langgraph",
+    "mcp",
+    "ai-agents",
+    "format-preserving",
+    "tokenization",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Security :: Cryptography",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "pydantic>=2.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/dhirajparihar/shadow-vault"
+Documentation = "https://github.com/dhirajparihar/shadow-vault#readme"
+Repository = "https://github.com/dhirajparihar/shadow-vault"
+"Issue Tracker" = "https://github.com/dhirajparihar/shadow-vault/issues"
+Changelog = "https://github.com/dhirajparihar/shadow-vault/releases"
+
+
+
+[project.optional-dependencies]
+langchain = [
+    "langchain-core",
+]
+api = [
+    "fastapi",
+    "uvicorn",
+    "httpx",
+]
+test = [
+    "pytest",
+    "pytest-asyncio",
+]
+all = [
+    "langchain-core",
+    "fastapi",
+    "uvicorn",
+    "httpx",
+    "pytest",
+    "pytest-asyncio",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["shadow_vault"]
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-v --strict-markers"
+asyncio_mode = "auto"
+markers = [
+    "asyncio: mark a test as an asyncio coroutine",
+]
