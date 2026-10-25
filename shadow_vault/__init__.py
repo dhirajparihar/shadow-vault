@@ -21,15 +21,25 @@ from shadow_vault.detectors import (
 )
 from shadow_vault.engine import ShadowVault
 from shadow_vault.integrations.decorators import vault_guard
-from shadow_vault.integrations.langchain import (
-    ProtectedTool,
-    ShadowVaultChatWrapper,
-    protect_tool,
-)
 from shadow_vault.integrations.mcp_proxy import MCPVaultInterceptor
-from shadow_vault.integrations.proxy_server import create_proxy_app
 from shadow_vault.store import VaultStore
 from shadow_vault.stream import StreamHydrator
+
+# Optional framework integrations (only loaded if dependencies installed)
+try:
+    from shadow_vault.integrations.langchain import (
+        ProtectedTool,
+        ShadowVaultChatWrapper,
+        protect_tool,
+    )
+except ImportError:
+    pass
+
+try:
+    from shadow_vault.integrations.proxy_server import create_proxy_app
+except ImportError:
+    pass
+
 from shadow_vault.synthesizer import (
     SYNTHETIC_PREFIXES,
     calculate_luhn_check_digit,

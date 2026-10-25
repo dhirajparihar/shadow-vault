@@ -1,3 +1,4 @@
 streamlit>=1.30.0
 pydantic>=2.0
-shadow-vault>=0.3.0
+langchain-core
+
