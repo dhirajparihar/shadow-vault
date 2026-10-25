@@ -67,21 +67,29 @@ def print_section(title: str, subtitle: str) -> None:
     print(f"{C_DIM}    {subtitle}{C_RESET}\n")
 
 
-def print_box(content: str, color: str = C_WHITE, title: str | None = None) -> None:
-    lines = content.strip().split("\n")
-    max_len = max(len(line) for line in lines) if lines else 40
-    width = max(max_len + 4, 76)
+def print_box(content: str, color: str = C_WHITE, title: str | None = None, max_width: int = 80) -> None:
+    import textwrap
+    raw_lines = content.strip().split("\n")
+    lines: list[str] = []
+    inner_width = max_width - 4
+    for rl in raw_lines:
+        if len(rl) > inner_width:
+            lines.extend(textwrap.wrap(rl, width=inner_width))
+        else:
+            lines.append(rl)
+    width = max_width
 
     border_color = color
     if title:
-        header = f"+-- [ {title} ] " + ("-" * (width - len(title) - 8)) + "+"
+        dash_count = max(0, width - len(title) - 8)
+        header = f"+-- [ {title} ] " + ("-" * dash_count) + "+"
     else:
         header = "+" + ("-" * (width - 2)) + "+"
     footer = "+" + ("-" * (width - 2)) + "+"
 
     print(f"{border_color}{header}{C_RESET}")
     for line in lines:
-        padding = " " * (width - len(line) - 4)
+        padding = " " * max(0, width - len(line) - 4)
         print(f"{border_color}|{C_RESET}  {line}{padding}{border_color}|{C_RESET}")
     print(f"{border_color}{footer}{C_RESET}")
 
@@ -203,25 +211,24 @@ def main() -> None:
     synth_card = tool_result["virtual_card"]
 
     simulated_llm_stream_chunks = [
-        "Receipt: Your payment ",
-        "was successful! ",
+        "Receipt: Your payment was successful!\n    ",
         "A confirmation has been ",
         f"sent to {synth_email[:6]}",  # Token torn across chunk 1
         f"{synth_email[6:16]}",       # Token torn across chunk 2
-        f"{synth_email[16:]}. ",      # Token completed
+        f"{synth_email[16:]}.\n    ", # Token completed with newline
         "Card on file: ",
         f"{synth_card[:8]}",          # Card torn across chunk 1
-        f"{synth_card[8:]}. ",        # Card completed
+        f"{synth_card[8:]}.\n    ",   # Card completed with newline
         "SMS sent to your backup: ",
         f"{synth_backup_phone[:7]}",  # Phone torn
-        f"{synth_backup_phone[7:]}. ",# Phone completed
+        f"{synth_backup_phone[7:]}.\n    ",  # Phone completed with newline
         "Thank you for using ShadowVault!",
     ]
 
     print(f"  {C_MAGENTA}Incoming LLM Chunks (Simulating SSE Stream):{C_RESET}")
     stream_hydrator = vault.stream(session_id=session_id)
 
-    print(f"  {C_WHITE}Live Output to User Terminal: {C_RESET}", end="", flush=True)
+    print(f"  {C_WHITE}Live Output to User Terminal:{C_RESET}\n    ", end="", flush=True)
 
     for chunk in simulated_llm_stream_chunks:
         emitted = stream_hydrator.process_chunk(chunk)
