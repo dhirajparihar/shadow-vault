@@ -8,7 +8,7 @@
   <a href="https://github.com/dhirajparihar/shadow-vault/actions"><img src="https://img.shields.io/badge/tests-54%20passed-brightgreen.svg" alt="Tests"></a>
   <a href="https://pypi.org/project/shadow-vault/"><img src="https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue.svg" alt="Python Versions"></a>
   <a href="https://github.com/dhirajparihar/shadow-vault/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"></a>
-  <a href="https://pypi.org/project/shadow-vault/"><img src="https://img.shields.io/badge/zero--dependency-core-orange.svg" alt="Zero Dependencies"></a>
+  <a href="https://dhirajparihar.github.io/shadow-vault/"><img src="https://img.shields.io/badge/live%20demo-GitHub%20Pages-emerald.svg" alt="Live Demo"></a>
 </p>
 
 ---
@@ -105,7 +105,8 @@ streamlit run playground/app.py
 - **Panel 2 (What Cloud LLMs See)**: Highlights format-preserving synthetic `@shadow.vault` tokens in green over the wire.
 - **Panel 3 (Live SQLite Vault)**: Inspects the live in-memory mapping table, BLAKE2b deduplication, and sub-millisecond latency counters.
 - **Pre-Loaded Scenarios**: Includes *Fintech UPI/PAN Refund Agent*, *Healthcare Patient Booking Agent*, and *DevOps API Key Log Analyzer*.
-- **1-Click Deploy**: Deployable for free on **Hugging Face Spaces** or **Render** (see [playground/README.md](file:///c:/Users/HP/Desktop/projectios/shadow-vault/playground/README.md)).
+- 🌐 **Live Online Demo**: [https://dhirajparihar.github.io/shadow-vault/](https://dhirajparihar.github.io/shadow-vault/) *(No install needed)*
+- 💻 **Local Streamlit App**: `streamlit run playground/app.py`
 
 ---
 
