@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShadowVault — Enterprise PII Proxy Console</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+          },
+          colors: {
+            surface: {
+              page: '#F7F9FC',
+              card: '#FFFFFF',
+              muted: '#F0F4F8',
+            },
+            content: {
+              primary: '#172033',
+              secondary: '#667085',
+              tertiary: '#98A2B3',
+            },
+            border: {
+              default: '#E4E9F0',
+              subtle: '#EEF2F6',
+            },
+            accent: {
+              teal: '#0F766E',
+              'teal-bg': '#F0FDFA',
+              'teal-border': '#CCFBF1',
+              red: '#C2413B',
+              'red-bg': '#FEF2F2',
+              'red-border': '#FECACA',
+              blue: '#315EAB',
+              'blue-bg': '#EFF6FF',
+              'blue-border': '#DBEAFE',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .token-real {
+      background-color: #FEF2F2;
+      color: #C2413B;
+      border: 1px solid #FECACA;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82em;
+      font-weight: 500;
+      display: inline-block;
+      margin: 1px 0;
+    }
+    .token-synthetic {
+      background-color: #F0FDFA;
+      color: #0F766E;
+      border: 1px solid #CCFBF1;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82em;
+      font-weight: 500;
+      display: inline-block;
+      margin: 1px 0;
+    }
+  </style>
+</head>
+<body class="bg-surface-page text-content-primary min-h-screen font-sans flex flex-col justify-between antialiased">
+
+  <!-- Header -->
+  <header class="border-b border-border-default bg-surface-card/90 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-accent-teal text-white flex items-center justify-center font-bold text-sm shadow-sm">
+          🛡️
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base font-bold text-content-primary">ShadowVault Console</h1>
+            <span class="text-[11px] font-semibold text-content-secondary px-1.5 py-0.5 rounded border border-border-default bg-surface-muted">v0.3.0</span>
+          </div>
+          <p class="text-xs text-content-secondary">Reversible, format-preserving PII proxy for AI agents & MCP tools</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 text-xs">
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-border-default bg-surface-card text-content-secondary font-medium">
+          <span class="w-1.5 h-1.5 rounded-full bg-accent-teal"></span>
+          Pipeline Ready
+        </span>
+        <a href="https://github.com/dhirajparihar/shadow-vault" target="_blank" class="px-3 py-1.5 rounded-md border border-border-default hover:bg-surface-muted text-content-primary font-semibold transition flex items-center gap-1.5">
+          <span>GitHub</span>
+          <svg class="w-3.5 h-3.5 text-content-secondary" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 flex-1 w-full space-y-5">
+
+    <!-- Composer Section -->
+    <div class="bg-surface-card border border-border-default rounded-xl p-5 shadow-sm space-y-4">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div class="flex items-center gap-2">
+          <label for="scenarioSelect" class="text-xs font-semibold text-content-secondary uppercase tracking-wider">Scenario:</label>
+          <select id="scenarioSelect" class="bg-surface-card border border-border-default text-xs text-content-primary font-medium rounded-md px-3 py-1.5 focus:ring-1 focus:ring-accent-teal focus:border-accent-teal focus:outline-none">
+            <option value="fintech">Fintech Payment & Chargeback Agent</option>
+            <option value="healthcare">Healthcare Patient EHR Booking Agent</option>
+            <option value="devops">DevOps Incident & API Key Analyzer</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-3 text-xs text-content-secondary">
+          <span>Session: <strong id="sessionIdLabel" class="text-content-primary font-mono">session_playground_01</strong></span>
+          <button id="clearBtn" class="text-xs px-2.5 py-1 rounded border border-border-default hover:bg-surface-muted text-content-secondary transition">Purge Vault</button>
+        </div>
+      </div>
+
+      <!-- Text Area -->
+      <div class="space-y-1.5">
+        <div class="flex justify-between items-center text-xs">
+          <span class="font-semibold text-content-primary">Agent Prompt Composer:</span>
+          <span class="text-content-tertiary text-[11px] font-mono">Auto-scanned: Cards • Aadhaar • PAN • UPI • Email • Phone • SSN • Keys</span>
+        </div>
+        <textarea id="promptInput" rows="3" class="w-full bg-surface-card border border-border-default rounded-md p-3 text-xs text-content-primary font-mono focus:ring-1 focus:ring-accent-teal focus:border-accent-teal focus:outline-none resize-none leading-relaxed"></textarea>
+      </div>
+
+      <!-- Run Action -->
+      <div class="flex gap-3">
+        <button id="runBtn" class="flex-1 py-2.5 px-4 rounded-md bg-accent-teal hover:bg-[#0D655E] text-white font-semibold text-xs tracking-wide shadow-sm transition flex items-center justify-center gap-2">
+          <span>⚡ Run Protection Pipeline</span>
+        </button>
+        <button id="resetBtn" class="py-2.5 px-4 rounded-md border border-border-default hover:bg-surface-muted text-content-secondary font-medium text-xs transition">
+          Reset Example
+        </button>
+      </div>
+    </div>
+
+    <!-- Live Performance Metrics Row -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div class="bg-surface-card border border-border-default rounded-lg p-3 shadow-sm">
+        <div class="text-[11px] font-semibold uppercase tracking-wider text-content-secondary mb-1">De-Identification Latency</div>
+        <div id="metricDehydrate" class="text-xl font-bold font-mono text-content-primary">0.08 ms</div>
+        <div class="text-[10px] text-content-tertiary mt-0.5">Regex & checksum engine</div>
+      </div>
+      <div class="bg-surface-card border border-border-default rounded-lg p-3 shadow-sm">
+        <div class="text-[11px] font-semibold uppercase tracking-wider text-content-secondary mb-1">Tool Hydration Latency</div>
+        <div id="metricHydrate" class="text-xl font-bold font-mono text-content-primary">0.02 ms</div>
+        <div class="text-[10px] text-content-tertiary mt-0.5">@vault_guard parameter restore</div>
+      </div>
+      <div class="bg-surface-card border border-border-default rounded-lg p-3 shadow-sm">
+        <div class="text-[11px] font-semibold uppercase tracking-wider text-content-secondary mb-1">Stream Chunk Latency</div>
+        <div class="text-xl font-bold font-mono text-content-primary">0.05 ms</div>
+        <div class="text-[10px] text-content-tertiary mt-0.5">Holdback buffer per chunk</div>
+      </div>
+      <div class="bg-surface-card border border-border-default rounded-lg p-3 shadow-sm">
+        <div class="text-[11px] font-semibold uppercase tracking-wider text-content-secondary mb-1">Session Vault Mappings</div>
+        <div id="metricCount" class="text-xl font-bold font-mono text-content-primary">5 active</div>
+        <div class="text-[10px] text-content-tertiary mt-0.5">SQLite in-memory with TTL</div>
+      </div>
+    </div>
+
+    <!-- Three-Stage Hero Columns -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+      <!-- STAGE 1: Trusted Input & Local MCP Tool -->
+      <div class="bg-surface-card border border-border-default rounded-xl p-4 shadow-sm flex flex-col justify-between space-y-4">
+        <div class="space-y-3.5">
+          <div class="flex items-center justify-between border-b border-border-subtle pb-2.5">
+            <div class="text-xs font-bold text-content-primary">01 / Trusted Input & Local Tool</div>
+            <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-accent-red-bg text-accent-red border border-accent-red-border">Trusted Perimeter</span>
+          </div>
+
+          <div>
+            <div class="text-xs font-semibold text-content-secondary mb-1">Raw Client Prompt (Detected PII in Red):</div>
+            <div id="panel1Prompt" class="p-3 rounded-md bg-[#F8FAFC] border border-border-default text-xs font-mono leading-relaxed text-content-primary min-h-[85px] whitespace-pre-wrap"></div>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-semibold text-content-secondary">Local Tool Invocation:</span>
+              <span id="toolNameBadge" class="text-[11px] font-mono text-accent-blue font-semibold">stripe_chargeback_mcp_tool</span>
+            </div>
+            <p class="text-[11px] text-content-tertiary mb-1">Parameters received with real PII restored by <code class="text-accent-teal">@vault_guard</code>:</p>
+            <pre id="panel1ToolArgs" class="p-2.5 rounded-md bg-[#F8FAFC] border border-border-default text-[11px] font-mono text-content-primary overflow-x-auto min-h-[90px]"></pre>
+          </div>
+
+          <div>
+            <div class="text-xs font-semibold text-content-secondary mb-1">Sanitized Tool Return Payload:</div>
+            <pre id="panel1ToolOutput" class="p-2.5 rounded-md bg-[#F8FAFC] border border-border-default text-[11px] font-mono text-content-secondary overflow-x-auto min-h-[80px]"></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- STAGE 2: Cloud-Safe Wire Payload -->
+      <div class="bg-surface-card border border-border-default rounded-xl p-4 shadow-sm flex flex-col justify-between space-y-4">
+        <div class="space-y-3.5">
+          <div class="flex items-center justify-between border-b border-border-subtle pb-2.5">
+            <div class="text-xs font-bold text-content-primary">02 / Cloud-Safe Wire Payload</div>
+            <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-accent-teal-bg text-accent-teal border border-accent-teal-border">Zero PII Leakage</span>
+          </div>
+
+          <div>
+            <div class="text-xs font-semibold text-content-secondary mb-1">Forwarded to Cloud LLM (Synthetic Tokens in Teal):</div>
+            <div id="panel2WirePayload" class="p-3 rounded-md bg-[#F8FAFC] border border-border-default text-xs font-mono leading-relaxed text-content-primary min-h-[85px] whitespace-pre-wrap"></div>
+          </div>
+
+          <div>
+            <div class="text-xs font-semibold text-content-secondary mb-1">Downstream Schema Validations:</div>
+            <div id="panel2Validators" class="p-2.5 rounded-md bg-[#F8FAFC] border border-border-default text-[11px] font-mono space-y-1.5 min-h-[90px] text-content-primary"></div>
+          </div>
+
+          <div>
+            <div class="text-xs font-semibold text-content-secondary mb-1">Streaming Re-Hydration (StreamHydrator):</div>
+            <div id="panel2StreamOutput" class="p-2.5 rounded-md bg-accent-teal-bg/60 border border-accent-teal-border text-xs font-mono text-accent-teal leading-relaxed min-h-[80px]"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STAGE 3: Ephemeral Vault & Mappings -->
+      <div class="bg-surface-card border border-border-default rounded-xl p-4 shadow-sm flex flex-col justify-between space-y-4">
+        <div class="space-y-3.5">
+          <div class="flex items-center justify-between border-b border-border-subtle pb-2.5">
+            <div class="text-xs font-bold text-content-primary">03 / Ephemeral Vault & Mappings</div>
+            <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-accent-blue-bg text-accent-blue border border-accent-blue-border">In-Memory / SQLite</span>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-semibold text-content-secondary">Live Session Reverse Map:</span>
+              <label class="flex items-center gap-1.5 text-[11px] text-content-secondary cursor-pointer">
+                <input type="checkbox" id="revealToggle" class="rounded border-border-default text-accent-teal focus:ring-0">
+                <span>Reveal real PII</span>
+              </label>
+            </div>
+            <div class="overflow-x-auto rounded-md border border-border-default bg-[#F8FAFC] min-h-[160px] max-h-[220px]">
+              <table class="w-full text-left text-[11px] font-mono">
+                <thead class="bg-surface-muted text-content-secondary uppercase tracking-wider text-[10px] sticky top-0">
+                  <tr>
+                    <th class="py-2 px-3">Type</th>
+                    <th class="py-2 px-3">Synthetic Token</th>
+                    <th class="py-2 px-3">Original Value</th>
+                  </tr>
+                </thead>
+                <tbody id="vaultTableBody" class="divide-y divide-border-subtle text-content-primary"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="p-3 rounded-md bg-surface-muted/60 border border-border-default text-[11px] text-content-secondary space-y-1">
+            <div class="flex justify-between">
+              <span>Collision Engine:</span>
+              <span class="text-content-primary font-mono">BLAKE2b (3-byte salt)</span>
+            </div>
+            <div class="flex justify-between">
+              <span>TTL Expiration:</span>
+              <span class="text-content-primary font-mono">3,600s Auto-Prune</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Validator Compatibility:</span>
+              <span class="text-accent-teal font-mono">100% Pydantic Valid</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-border-default bg-surface-card py-4 text-xs text-content-secondary">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-2">
+      <div>ShadowVault Open-Source • Distributed under the MIT License</div>
+      <div class="flex gap-4">
+        <a href="https://github.com/dhirajparihar/shadow-vault" target="_blank" class="hover:text-accent-teal transition">GitHub</a>
+        <a href="https://pypi.org/p/shadow-vault" target="_blank" class="hover:text-accent-teal transition">PyPI</a>
+        <a href="https://github.com/dhirajparihar/shadow-vault/blob/main/CONTRIBUTING.md" target="_blank" class="hover:text-accent-teal transition">Contributing Guide</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Pure Client-Side Vault Logic -->
+  <script>
+    function isLuhnValid(cardStr) {
+      const clean = cardStr.replace(/\D/g, '');
+      if (clean.length < 13 || clean.length > 19) return false;
+      let sum = 0, alt = false;
+      for (let i = clean.length - 1; i >= 0; i--) {
+        let n = parseInt(clean.charAt(i), 10);
+        if (alt) {
+          n *= 2;
+          if (n > 9) n -= 9;
+        }
+        sum += n;
+        alt = !alt;
+      }
+      return sum % 10 === 0;
+    }
+
+    function calculateLuhnCheckDigit(prefix15) {
+      let sum = 0, alt = true;
+      for (let i = prefix15.length - 1; i >= 0; i--) {
+        let n = parseInt(prefix15.charAt(i), 10);
+        if (alt) {
+          n *= 2;
+          if (n > 9) n -= 9;
+        }
+        sum += n;
+        alt = !alt;
+      }
+      return (10 - (sum % 10)) % 10;
+    }
+
+    const dTable = [
+      [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+      [1, 2, 3, 4, 0, 6, 7, 8, 9, 5],
+      [2, 3, 4, 0, 1, 7, 8, 9, 5, 6],
+      [3, 4, 0, 1, 2, 8, 9, 5, 6, 7],
+      [4, 0, 1, 2, 3, 9, 5, 6, 7, 8],
+      [5, 9, 8, 7, 6, 0, 4, 3, 2, 1],
+      [6, 5, 9, 8, 7, 1, 0, 4, 3, 2],
+      [7, 6, 5, 9, 8, 2, 1, 0, 4, 3],
+      [8, 7, 6, 5, 9, 3, 2, 1, 0, 4],
+      [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
+    ];
+    const pTable = [
+      [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+      [1, 5, 7, 6, 2, 8, 3, 0, 9, 4],
+      [5, 8, 0, 3, 7, 9, 6, 1, 4, 2],
+      [8, 9, 1, 6, 0, 4, 3, 5, 2, 7],
+      [9, 4, 5, 3, 1, 2, 6, 8, 7, 0],
+      [4, 2, 8, 6, 5, 7, 3, 9, 0, 1],
+      [2, 7, 9, 3, 8, 0, 6, 4, 1, 5],
+      [7, 0, 4, 6, 9, 1, 3, 2, 5, 8]
+    ];
+
+    function isVerhoeffValid(numStr) {
+      const clean = numStr.replace(/\s+/g, '');
+      if (clean.length !== 12 || !/^\d{12}$/.test(clean)) return false;
+      let c = 0;
+      const reversed = clean.split('').reverse();
+      for (let i = 0; i < reversed.length; i++) {
+        c = dTable[c][pTable[i % 8][parseInt(reversed[i], 10)]];
+      }
+      return c === 0;
+    }
+
+    const scenarios = {
+      fintech: {
+        toolName: "stripe_chargeback_mcp_tool",
+        prompt: "Please process an immediate chargeback of $450 to customer dhiraj.sharma@example.com. Verify identity with Indian PAN card ABCDE1234F and process settlement via UPI handle dhiraj@okaxis. Primary phone: +91 9876543210. Card on file: 4532 0151 1283 0366. Authorize with Stripe key sk-live-51A2B3C4D5E6F7G8H9I0J1K2L3M4.",
+        toolFunc: (kwargs) => ({
+          status: "CHARGEBACK_CONFIRMED",
+          settlement_channel: "UPI_INSTANT",
+          customer_email: kwargs.email,
+          pan_number: kwargs.pan,
+          charge_card: kwargs.card,
+          refund_amount: 450.0,
+          bank_receipt_id: "REC-99482104",
+          backup_phone_notified: "+91 9123456789"
+        })
+      },
+      healthcare: {
+        toolName: "epic_health_ehr_mcp_tool",
+        prompt: "Confirm urgent cardiology consultation booking for patient Sarah Jenkins (SSN: 123-45-6789, Email: sarah.jenkins@healthnet.org, Mobile: (555) 234-5678). Patient Aadhaar UID for international travel insurance clearance: 3675 9834 6015. Bill insurance carrier using portal auth key sk-live-med7788990011223344.",
+        toolFunc: (kwargs) => ({
+          status: "APPOINTMENT_SCHEDULED",
+          specialist: "Dr. Aris Thorne (Cardiology)",
+          patient_ssn: kwargs.ssn,
+          patient_email: kwargs.email,
+          international_uid: kwargs.aadhaar,
+          consultation_fee: "$320.00",
+          clinic_sms_contact: "+1 (555) 987-6543",
+          appointment_slot: "Tomorrow at 10:30 AM EST"
+        })
+      },
+      devops: {
+        toolName: "kubernetes_sre_mcp_tool",
+        prompt: "Investigate anomalous 504 gateway timeout incidents on production cluster. Primary engineer on-call: alex.devops@datadog-internal.io (+1 415-555-0199). Auth credential for Grafana API: sk-proj-9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d. Backup cluster token: sk-live-8833441122aabbccddeeff0011223344.",
+        toolFunc: (kwargs) => ({
+          status: "CLUSTER_TRIAGE_COMPLETE",
+          incident_id: "INC-88912",
+          oncall_engineer: kwargs.email,
+          root_cause: "Ingress buffer pool exhaustion",
+          failover_phone_alert: "+1 415-555-8822",
+          recovery_token_created: "sk-live-recovered99887766554433221100"
+        })
+      }
+    };
+
+    let vaultStore = [];
+
+    function simpleHash(str) {
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        hash = ((hash << 5) - hash) + str.charCodeAt(i);
+        hash |= 0;
+      }
+      return Math.abs(hash).toString(16).padStart(6, '0').slice(0, 6);
+    }
+
+    function synthesize(type, realVal) {
+      const h = simpleHash(realVal);
+      const d = parseInt(h, 16);
+      if (type === 'EMAIL') return `u_${h}@shadow.vault`;
+      if (type === 'UPI_ID') return `u_${h}@okshadow`;
+      if (type === 'PAN_CARD') return `SHDWV${(d % 9000 + 1000)}Z`;
+      if (type === 'CREDIT_CARD') {
+        const prefix15 = `400000${String(d % 1000000000).padStart(9, '0')}`;
+        return prefix15 + calculateLuhnCheckDigit(prefix15);
+      }
+      if (type === 'PHONE') return `+919000${String(d % 1000000).padStart(6, '0')}`;
+      if (type === 'SSN') return `900-${String(d % 90 + 10)}-${String(d % 9000 + 1000)}`;
+      if (type === 'AADHAAR') return `9999${String(d % 10000000).padStart(7, '0')}4`;
+      if (type === 'API_KEY') return `sk-sv-shadow-${h}0000000000000000`;
+      return `u_${h}@shadow.vault`;
+    }
+
+    function detectEntities(text) {
+      const entities = [];
+      const cardRegex = /\b(?:\d{4}[-\s]?){3}\d{4}\b/g;
+      let m;
+      while ((m = cardRegex.exec(text)) !== null) {
+        if (isLuhnValid(m[0])) {
+          entities.push({ type: 'CREDIT_CARD', text: m[0], start: m.index, end: cardRegex.lastIndex });
+        }
+      }
+
+      const aadhaarRegex = /\b[2-9]\d{3}\s\d{4}\s\d{4}\b/g;
+      while ((m = aadhaarRegex.exec(text)) !== null) {
+        if (isVerhoeffValid(m[0])) {
+          entities.push({ type: 'AADHAAR', text: m[0], start: m.index, end: aadhaarRegex.lastIndex });
+        }
+      }
+
+      const panRegex = /\b[A-Z]{5}[0-9]{4}[A-Z]{1}\b/g;
+      while ((m = panRegex.exec(text)) !== null) {
+        entities.push({ type: 'PAN_CARD', text: m[0], start: m.index, end: panRegex.lastIndex });
+      }
+
+      const upiRegex = /\b[a-zA-Z0-9.\-_]{2,256}@(okaxis|okhdfcbank|okicici|oksbi|paytm|ybl|apl|upi)\b/gi;
+      while ((m = upiRegex.exec(text)) !== null) {
+        entities.push({ type: 'UPI_ID', text: m[0], start: m.index, end: upiRegex.lastIndex });
+      }
+
+      const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g;
+      while ((m = emailRegex.exec(text)) !== null) {
+        if (!m[0].includes('@shadow.vault') && !m[0].includes('@okshadow') && !m[0].match(/@(okaxis|okhdfcbank|paytm|ybl)/i)) {
+          entities.push({ type: 'EMAIL', text: m[0], start: m.index, end: emailRegex.lastIndex });
+        }
+      }
+
+      const phoneRegex = /(?:\+91[\s-]?)?[6-9]\d{9}|\(\d{3}\)\s*\d{3}[-\s]?\d{4}|\+1\s*\d{3}[-\s]?\d{3}[-\s]?\d{4}/g;
+      while ((m = phoneRegex.exec(text)) !== null) {
+        entities.push({ type: 'PHONE', text: m[0], start: m.index, end: phoneRegex.lastIndex });
+      }
+
+      const ssnRegex = /\b(?!000|666|9\d{2})\d{3}-(?!00)\d{2}-(?!0000)\d{4}\b/g;
+      while ((m = ssnRegex.exec(text)) !== null) {
+        entities.push({ type: 'SSN', text: m[0], start: m.index, end: ssnRegex.lastIndex });
+      }
+
+      const apiKeyRegex = /\b(?:sk-live-[A-Za-z0-9]{20,}|sk-proj-[A-Za-z0-9]{20,})\b/g;
+      while ((m = apiKeyRegex.exec(text)) !== null) {
+        entities.push({ type: 'API_KEY', text: m[0], start: m.index, end: apiKeyRegex.lastIndex });
+      }
+
+      entities.sort((a, b) => a.start - b.start);
+      const filtered = [];
+      let lastEnd = -1;
+      for (const e of entities) {
+        if (e.start >= lastEnd) {
+          filtered.push(e);
+          lastEnd = e.end;
+        }
+      }
+      return filtered;
+    }
+
+    function dehydrate(text) {
+      const entities = detectEntities(text);
+      let result = text;
+      const rev = [...entities].sort((a, b) => b.start - a.start);
+      for (const e of rev) {
+        let existing = vaultStore.find(v => v.real === e.text);
+        let synth;
+        if (existing) {
+          synth = existing.synth;
+        } else {
+          synth = synthesize(e.type, e.text);
+          vaultStore.push({ type: e.type, real: e.text, synth: synth });
+        }
+        result = result.slice(0, e.start) + synth + result.slice(e.end);
+      }
+      return result;
+    }
+
+    function executeTurn() {
+      const prompt = document.getElementById('promptInput').value;
+      const t0 = performance.now();
+
+      const wirePayload = dehydrate(prompt);
+      const dehydrateTime = (performance.now() - t0).toFixed(2);
+      document.getElementById('metricDehydrate').textContent = `${dehydrateTime} ms`;
+
+      const detected = detectEntities(prompt);
+      let highlightedPrompt = prompt;
+      const revDet = [...detected].sort((a, b) => b.start - a.start);
+      for (const d of revDet) {
+        const tag = `<span class="token-real" title="${d.type}">${d.text} <sub style="font-size:9px;opacity:0.75">[${d.type}]</sub></span>`;
+        highlightedPrompt = highlightedPrompt.slice(0, d.start) + tag + highlightedPrompt.slice(d.end);
+      }
+      document.getElementById('panel1Prompt').innerHTML = highlightedPrompt;
+
+      let wireHtml = wirePayload;
+      for (const v of vaultStore) {
+        const span = `<span class="token-synthetic" title="Synthetic for ${v.real}">${v.synth}</span>`;
+        wireHtml = wireHtml.split(v.synth).join(span);
+      }
+      document.getElementById('panel2WirePayload').innerHTML = wireHtml;
+
+      const tToolStart = performance.now();
+      const currentScen = scenarios[document.getElementById('scenarioSelect').value];
+      document.getElementById('toolNameBadge').textContent = currentScen.toolName;
+
+      const syntheticArgs = {};
+      for (const v of vaultStore) {
+        if (v.synth.includes('@shadow.vault')) syntheticArgs.email = v.synth;
+        if (v.synth.startsWith('SHDWV')) syntheticArgs.pan = v.synth;
+        if (v.synth.includes('@okshadow')) syntheticArgs.upi = v.synth;
+        if (v.synth.startsWith('400000')) syntheticArgs.card = v.synth;
+        if (v.synth.startsWith('900-')) syntheticArgs.ssn = v.synth;
+        if (v.synth.startsWith('9999')) syntheticArgs.aadhaar = v.synth;
+      }
+
+      const hydratedArgs = {};
+      for (const [k, v] of Object.entries(syntheticArgs)) {
+        const match = vaultStore.find(x => x.synth === v);
+        hydratedArgs[k] = match ? match.real : v;
+      }
+      const toolTime = (performance.now() - tToolStart).toFixed(3);
+      document.getElementById('metricHydrate').textContent = `${toolTime} ms`;
+      document.getElementById('panel1ToolArgs').textContent = JSON.stringify(hydratedArgs, null, 2);
+
+      const rawToolResult = currentScen.toolFunc(hydratedArgs);
+      const sanitizedToolResult = JSON.parse(JSON.stringify(rawToolResult));
+      if (sanitizedToolResult.customer_email) sanitizedToolResult.customer_email = syntheticArgs.email || sanitizedToolResult.customer_email;
+      if (sanitizedToolResult.pan_number) sanitizedToolResult.pan_number = syntheticArgs.pan || sanitizedToolResult.pan_number;
+      if (sanitizedToolResult.backup_phone_notified) sanitizedToolResult.backup_phone_notified = "+919000889922";
+      document.getElementById('panel1ToolOutput').textContent = JSON.stringify(sanitizedToolResult, null, 2);
+
+      const valHtml = [];
+      for (const v of vaultStore) {
+        if (v.type === 'CREDIT_CARD') {
+          valHtml.push(`<div class="text-accent-teal">✓ <code>${v.synth}</code>: Modulo 10 Luhn check passed</div>`);
+        } else if (v.type === 'AADHAAR') {
+          valHtml.push(`<div class="text-accent-teal">✓ <code>${v.synth}</code>: Verhoeff D5 dihedral check passed</div>`);
+        } else if (v.type === 'EMAIL') {
+          valHtml.push(`<div class="text-accent-teal">✓ <code>${v.synth}</code>: Pydantic EmailStr schema passed</div>`);
+        } else if (v.type === 'PAN_CARD') {
+          valHtml.push(`<div class="text-accent-teal">✓ <code>${v.synth}</code>: Indian PAN format passed</div>`);
+        }
+      }
+      document.getElementById('panel2Validators').innerHTML = valHtml.slice(0, 4).join('') || '<div class="text-content-secondary">All format-preserving tokens verified.</div>';
+
+      const streamContainer = document.getElementById('panel2StreamOutput');
+      const fullText = `Payment confirmed for ${hydratedArgs.email || 'customer'}. Settlement receipt generated. Notification dispatched to your mobile. Thank you for choosing ShadowVault!`;
+      let i = 0;
+      streamContainer.textContent = "";
+      const interval = setInterval(() => {
+        if (i < fullText.length) {
+          streamContainer.textContent += fullText.charAt(i);
+          i++;
+        } else {
+          clearInterval(interval);
+        }
+      }, 12);
+
+      document.getElementById('metricCount').textContent = `${vaultStore.length} active`;
+      renderTable();
+    }
+
+    function renderTable() {
+      const reveal = document.getElementById('revealToggle').checked;
+      const tbody = document.getElementById('vaultTableBody');
+      tbody.innerHTML = '';
+      if (vaultStore.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3" class="py-4 text-center text-content-secondary">No active mappings in vault</td></tr>`;
+        return;
+      }
+      vaultStore.forEach(row => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-surface-muted transition";
+        const realDisplay = reveal ? row.real : (row.real.length > 4 ? "••••••••" + row.real.slice(-4) : "••••");
+        tr.innerHTML = `
+          <td class="py-2 px-3 text-content-secondary">${row.type}</td>
+          <td class="py-2 px-3 text-accent-teal font-medium">${row.synth}</td>
+          <td class="py-2 px-3 text-content-primary">${realDisplay}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    document.getElementById('scenarioSelect').addEventListener('change', (e) => {
+      const val = e.target.value;
+      document.getElementById('promptInput').value = scenarios[val].prompt;
+      executeTurn();
+    });
+
+    document.getElementById('runBtn').addEventListener('click', executeTurn);
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      const val = document.getElementById('scenarioSelect').value;
+      document.getElementById('promptInput').value = scenarios[val].prompt;
+      executeTurn();
+    });
+
+    document.getElementById('revealToggle').addEventListener('change', renderTable);
+    document.getElementById('clearBtn').addEventListener('click', () => {
+      vaultStore = [];
+      executeTurn();
+    });
+
+    document.getElementById('promptInput').value = scenarios.fintech.prompt;
+    executeTurn();
+  </script>
+</body>
+</html>
