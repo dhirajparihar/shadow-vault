@@ -359,8 +359,9 @@ def highlight_real_pii(text: str) -> str:
     sorted_ents = sorted(entities, key=lambda e: e.start, reverse=True)
     result = text
     for e in sorted_ents:
-        raw_val = e.matched_text
-        tag = f'<span class="token-real" title="{e.entity_type.value}">{html.escape(raw_val)} <sub style="font-size:9px;opacity:0.8;">[{e.entity_type.value}]</sub></span>'
+        raw_val = e.value
+        etype = getattr(e.entity_type, "value", str(e.entity_type))
+        tag = f'<span class="token-real" title="{html.escape(etype)}">{html.escape(raw_val)} <sub style="font-size:9px;opacity:0.8;">[{html.escape(etype)}]</sub></span>'
         result = result[: e.start] + tag + result[e.end :]
     return result
 

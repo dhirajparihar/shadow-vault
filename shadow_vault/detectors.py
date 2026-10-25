@@ -34,6 +34,12 @@ class DetectedEntity(BaseModel):
     end: int
     score: float = Field(default=1.0, ge=0.0, le=1.0)
 
+    @property
+    def matched_text(self) -> str:
+        """Alias for value."""
+        return self.value
+
+
 
 # ============================================================================
 # Mathematical Checksum Validation: Luhn Algorithm (Credit Cards)

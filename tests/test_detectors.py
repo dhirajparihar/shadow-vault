@@ -301,3 +301,11 @@ def test_enabled_types_filter() -> None:
     types = {e.entity_type for e in entities}
     assert types == {EntityType.EMAIL.value, EntityType.PAN_CARD.value}
     assert EntityType.PHONE.value not in types
+
+
+def test_detected_entity_matched_text_property() -> None:
+    """Test DetectedEntity matched_text property alias."""
+    entity = DetectedEntity(entity_type="EMAIL", value="user@example.com", start=0, end=16)
+    assert entity.matched_text == "user@example.com"
+    assert entity.value == "user@example.com"
+
