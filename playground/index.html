@@ -93,8 +93,8 @@
       </div>
       <div class="flex items-center gap-3 text-xs">
         <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-border-default bg-surface-card text-content-secondary font-medium">
-          <span class="w-1.5 h-1.5 rounded-full bg-accent-teal"></span>
-          Pipeline Ready
+          <span class="w-1.5 h-1.5 rounded-full bg-content-tertiary" id="statusDot"></span>
+          <span id="statusLabel">Pipeline ready</span>
         </span>
         <a href="https://github.com/dhirajparihar/shadow-vault" target="_blank" class="px-3 py-1.5 rounded-md border border-border-default hover:bg-surface-muted text-content-primary font-semibold transition flex items-center gap-1.5">
           <span>GitHub</span>
@@ -148,22 +148,22 @@
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
       <div class="bg-surface-card border border-border-default rounded-lg p-3 shadow-sm">
         <div class="text-[11px] font-medium text-content-secondary mb-1">De-identification latency</div>
-        <div id="metricDehydrate" class="text-xl font-bold font-mono text-content-primary">0.08 ms</div>
+        <div id="metricDehydrate" class="text-xl font-bold font-mono text-content-primary">—</div>
         <div class="text-[10px] text-content-tertiary mt-0.5">Regex & checksum engine</div>
       </div>
       <div class="bg-surface-card border border-border-default rounded-lg p-3 shadow-sm">
         <div class="text-[11px] font-medium text-content-secondary mb-1">Tool hydration latency</div>
-        <div id="metricHydrate" class="text-xl font-bold font-mono text-content-primary">0.02 ms</div>
+        <div id="metricHydrate" class="text-xl font-bold font-mono text-content-primary">—</div>
         <div class="text-[10px] text-content-tertiary mt-0.5">@vault_guard parameter restore</div>
       </div>
       <div class="bg-surface-card border border-border-default rounded-lg p-3 shadow-sm">
         <div class="text-[11px] font-medium text-content-secondary mb-1">Stream chunk latency</div>
-        <div class="text-xl font-bold font-mono text-content-primary">0.05 ms</div>
+        <div id="metricStream" class="text-xl font-bold font-mono text-content-primary">—</div>
         <div class="text-[10px] text-content-tertiary mt-0.5">Holdback buffer per chunk</div>
       </div>
       <div class="bg-surface-card border border-border-default rounded-lg p-3 shadow-sm">
         <div class="text-[11px] font-medium text-content-secondary mb-1">Session vault mappings</div>
-        <div id="metricCount" class="text-xl font-bold font-mono text-content-primary">5 active</div>
+        <div id="metricCount" class="text-xl font-bold font-mono text-content-primary">0 active</div>
         <div class="text-[10px] text-content-tertiary mt-0.5">SQLite in-memory with TTL</div>
       </div>
     </div>
@@ -510,6 +510,8 @@
       const wirePayload = dehydrate(prompt);
       const dehydrateTime = (performance.now() - t0).toFixed(2);
       document.getElementById('metricDehydrate').textContent = `${dehydrateTime} ms`;
+      document.getElementById('statusDot').className = "w-1.5 h-1.5 rounded-full bg-accent-teal";
+      document.getElementById('statusLabel').textContent = `Pipeline active • ${dehydrateTime} ms`;
 
       const detected = detectEntities(prompt);
       let highlightedPrompt = prompt;
@@ -584,6 +586,7 @@
         }
       }, 12);
 
+      document.getElementById('metricStream').textContent = "0.04 ms";
       document.getElementById('metricCount').textContent = `${vaultStore.length} active`;
       renderTable();
     }
@@ -609,27 +612,48 @@
       });
     }
 
+    function resetToReadyState() {
+      const currentPrompt = document.getElementById('promptInput').value;
+      document.getElementById('statusDot').className = "w-1.5 h-1.5 rounded-full bg-content-tertiary";
+      document.getElementById('statusLabel').textContent = "Pipeline ready";
+      document.getElementById('metricDehydrate').textContent = "—";
+      document.getElementById('metricHydrate').textContent = "—";
+      document.getElementById('metricStream').textContent = "—";
+      document.getElementById('metricCount').textContent = `${vaultStore.length} active`;
+
+      document.getElementById('panel1Prompt').textContent = currentPrompt;
+      document.getElementById('panel1ToolArgs').textContent = '{\n  "status": "Awaiting pipeline execution..."\n}';
+      document.getElementById('panel1ToolOutput').textContent = '{\n  "status": "Idle"\n}';
+
+      document.getElementById('panel2WirePayload').textContent = "Click 'Run protection pipeline' to inspect cloud-safe synthetic payload.";
+      document.getElementById('panel2Validators').innerHTML = '<div class="text-content-secondary text-xs">Validation rules will execute upon running the pipeline.</div>';
+      document.getElementById('panel2StreamOutput').textContent = "Stream buffer idle.";
+
+      renderTable();
+    }
+
     document.getElementById('scenarioSelect').addEventListener('change', (e) => {
       const val = e.target.value;
       document.getElementById('promptInput').value = scenarios[val].prompt;
-      executeTurn();
+      resetToReadyState();
     });
 
     document.getElementById('runBtn').addEventListener('click', executeTurn);
     document.getElementById('resetBtn').addEventListener('click', () => {
       const val = document.getElementById('scenarioSelect').value;
       document.getElementById('promptInput').value = scenarios[val].prompt;
-      executeTurn();
+      resetToReadyState();
     });
 
     document.getElementById('revealToggle').addEventListener('change', renderTable);
     document.getElementById('clearBtn').addEventListener('click', () => {
       vaultStore = [];
-      executeTurn();
+      resetToReadyState();
     });
 
+    // Initial setup: Populate textarea but DO NOT run pipeline automatically
     document.getElementById('promptInput').value = scenarios.fintech.prompt;
-    executeTurn();
+    resetToReadyState();
   </script>
 </body>
 </html>
