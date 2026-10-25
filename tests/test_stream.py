@@ -134,4 +134,10 @@ def test_stream_transform_sync_and_async() -> None:
     async_result = asyncio.run(run_async_test())
     assert async_result == real_text
 
+    # Test feed alias
+    feed_hydrator = StreamHydrator(vault=vault, session_id=session_id)
+    feed_result = "".join(feed_hydrator.feed(ch) for ch in chunks) + feed_hydrator.flush()
+    assert feed_result == real_text
+
     vault.close()
+

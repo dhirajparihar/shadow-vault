@@ -60,6 +60,18 @@ class StreamHydrator:
         self.buffer = self.buffer[holdback_idx:]
         return emitted
 
+    def feed(self, chunk: str) -> str:
+        """Alias for process_chunk.
+
+        Args:
+            chunk: Next text chunk received from LLM or SSE stream.
+
+        Returns:
+            De-anonymized text safe to emit immediately.
+        """
+        return self.process_chunk(chunk)
+
+
     def _find_holdback_index(self, text: str, candidates: Iterable[str]) -> int:
         """Find start index of the longest suffix matching a prefix of any candidate.
 

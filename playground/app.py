@@ -434,7 +434,7 @@ if run_button or st.session_state.last_run is not None:
     t_stream_start = time.perf_counter()
     rehydrated_chunks = []
     for chunk in sample_llm_stream:
-        rehydrated_chunks.append(hydrator.feed(chunk))
+        rehydrated_chunks.append(hydrator.process_chunk(chunk))
     rehydrated_chunks.append(hydrator.flush())
     stream_latency_ms = (time.perf_counter() - t_stream_start) * 1000.0
     full_rehydrated_output = "".join(rehydrated_chunks)
