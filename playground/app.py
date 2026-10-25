@@ -39,8 +39,8 @@ from shadow_vault.synthesizer import is_synthetic
 # Streamlit Page Configuration
 # -----------------------------------------------------------------------------
 st.set_page_config(
-    page_title="ShadowVault — Enterprise Security Console",
-    page_icon="🛡️",
+    page_title="ShadowVault — Privacy protection playground",
+    page_icon="🔐",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -54,24 +54,24 @@ st.markdown(
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
     :root {
-        --bg-page: #F8FAFC;
+        --bg-page: #F5F7F3;
         --surface-card: #FFFFFF;
-        --surface-subtle: #F1F5F9;
-        --surface-inset: #F8FAFC;
-        --text-main: #0F172A;
-        --text-muted: #475569;
-        --text-subtle: #64748B;
-        --border-color: #E2E8F0;
-        --border-strong: #CBD5E1;
-        --teal-brand: #0F766E;
-        --teal-light: #F0FDFA;
-        --teal-border: #99F6E4;
-        --red-danger: #BE123C;
-        --red-light: #FFF1F2;
-        --red-border: #FECDD3;
-        --blue-info: #2563EB;
-        --blue-light: #EFF6FF;
-        --blue-border: #BFDBFE;
+        --surface-subtle: #EEF3EE;
+        --surface-inset: #FAFCF9;
+        --text-main: #14251F;
+        --text-muted: #52665C;
+        --text-subtle: #718078;
+        --border-color: #E2E9E3;
+        --border-strong: #CDD9D0;
+        --teal-brand: #087F66;
+        --teal-light: #E9F6F0;
+        --teal-border: #C4E7D4;
+        --red-danger: #A44731;
+        --red-light: #FFF0E8;
+        --red-border: #F5D1C1;
+        --blue-info: #315EAB;
+        --blue-light: #EFF4FC;
+        --blue-border: #D3DFF1;
     }
 
     /* Hide generic Streamlit UI chrome */
@@ -453,6 +453,50 @@ st.markdown(
         line-height: 1.45;
         margin-bottom: 1rem;
     }
+
+    /* ShadowVault Privacy Lab visual system */
+    .stApp { background: var(--bg-page) !important; }
+    .block-container { max-width: 1480px !important; padding-top: 1.35rem !important; }
+    [data-testid="stSidebar"] { background: #fff !important; border-right: 1px solid var(--border-color); }
+    [data-testid="stSidebar"] > div:first-child { padding-top: 1.4rem; }
+    .workbench-header { padding: .35rem 0 1.1rem; margin-bottom: 1rem; border-color: var(--border-color); }
+    .brand-badge { width: 40px; height: 40px; border-radius: 12px; color: #B7F1D8; background: #102C25; box-shadow: 0 5px 12px rgba(16,44,37,.14); }
+    .brand-title { font-size: 1.16rem; letter-spacing: -.045em; }
+    .brand-sub { margin-top: 3px; }
+    .status-badge { border-radius: 999px; padding: .36rem .72rem; background: #fff; }
+    .workbench-box { border: 1px solid var(--border-color); border-top: 3px solid var(--teal-brand); border-radius: 15px; box-shadow: 0 12px 36px rgba(25,50,38,.055); margin-bottom: 0; }
+    .workbench-topbar { padding: .8rem 1rem; background: #fff; border-bottom: 1px solid var(--border-color); }
+    .scenario-pill-active { border-radius: 8px; border-color: var(--border-color); padding: .35rem .65rem; }
+    .protocol-tag { border-radius: 6px; background: #F3F6F2; }
+    div[data-testid="stTextArea"] textarea { background: #FBFCFA !important; border: 1px solid #DCE5DE !important; border-radius: 10px !important; padding: .9rem !important; min-height: 110px; }
+    div[data-testid="stTextArea"] textarea:focus { border-color: var(--teal-brand) !important; box-shadow: 0 0 0 3px rgba(8,127,102,.12) !important; }
+    button[kind="primary"] { background: var(--teal-brand) !important; border-color: var(--teal-brand) !important; border-radius: 9px !important; padding: .55rem 1rem !important; box-shadow: 0 6px 14px rgba(8,127,102,.14); }
+    button[kind="primary"]:hover { background: #05634F !important; border-color: #05634F !important; transform: translateY(-1px); }
+    button[kind="secondary"] { border-radius: 9px !important; }
+    .telemetry-strip { border-radius: 14px; box-shadow: 0 3px 14px rgba(25,50,38,.035); margin-top: 1.1rem; }
+    .telemetry-item { padding: .95rem 1.05rem; }
+    .telemetry-number { letter-spacing: -.055em; }
+    .panel-card { border-radius: 14px; box-shadow: 0 12px 36px rgba(25,50,38,.055); overflow: hidden; }
+    .panel-header { padding: .85rem 1rem; border-color: #EDF1ED; }
+    .panel-title { letter-spacing: -.015em; }
+    .panel-body { padding: 1rem; gap: .9rem; }
+    .code-surface { background: #FAFCF9; border-radius: 10px; line-height: 1.75; }
+    .sidebar-desc-card { background: #F3F6F2; border-radius: 10px; line-height: 1.6; }
+    .intro-block { display:flex; justify-content:space-between; align-items:flex-end; gap:1.25rem; margin: .35rem 0 1.1rem; }
+    .intro-kicker { color:#087F66; font-size:.68rem; font-weight:700; letter-spacing:.13em; margin-bottom:.45rem; }
+    .intro-title { color:#14251F; font-size:1.85rem; font-weight:700; line-height:1.12; letter-spacing:-.055em; }
+    .intro-copy { color:#62736C; font-size:.84rem; line-height:1.6; margin-top:.45rem; max-width:640px; }
+    .local-note { flex:none; color:#385F4D; background:#EAF4EE; border:1px solid #D9E9DE; border-radius:11px; padding:.62rem .8rem; font-size:.7rem; font-weight:600; max-width:340px; line-height:1.5; }
+    .flow-strip { display:grid; grid-template-columns:repeat(3,1fr); gap:.65rem; margin:.2rem 0 1rem; }
+    .flow-step { display:flex; gap:.6rem; align-items:flex-start; background:#fff; border:1px solid var(--border-color); border-radius:11px; padding:.7rem .8rem; min-width:0; }
+    .flow-n { flex:none; display:grid; place-items:center; width:24px; height:24px; border-radius:8px; background:#E9F6F0; color:#087F66; font-size:.7rem; font-weight:800; }
+    .flow-step strong { display:block; font-size:.73rem; color:#14251F; margin:.08rem 0 .15rem; }
+    .flow-step span { display:block; font-size:.65rem; color:#62736C; line-height:1.45; }
+    .sample-note { background:#FFF7E8; color:#755928; border:1px solid #F0E0BD; border-radius:8px; padding:.48rem .65rem; font-size:.66rem; line-height:1.5; margin:.45rem 0 .55rem; }
+    @media(max-width:850px) { .flow-strip { grid-template-columns:1fr; } .local-note { max-width:none; } }
+    @media(max-width:850px) { .intro-block { align-items:flex-start; flex-direction:column; } .local-note { white-space:normal; } .telemetry-strip { grid-template-columns:repeat(2,1fr); } .telemetry-item:nth-child(2) { border-right:none; } .telemetry-item:nth-child(-n+2) { border-bottom:1px solid var(--border-color); } }
+    @media(max-width:560px) { .block-container { padding-left:1rem !important; padding-right:1rem !important; } .brand-sub { max-width:230px; } .header-actions { gap:.35rem; } .telemetry-strip { grid-template-columns:1fr 1fr; } .intro-title { font-size:1.55rem; } }
+    @media(prefers-reduced-motion:reduce) { *,*:before,*:after { transition:none !important; scroll-behavior:auto !important; } }
     </style>
     """,
     unsafe_allow_html=True,
@@ -703,28 +747,50 @@ st.markdown(
     <div class="workbench-header">
         <div class="brand-mark">
             <div class="brand-badge">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                </svg>
+                <svg width="23" height="23" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2.8 20 6v5.5c0 5.2-3.3 8.4-8 10.1-4.7-1.7-8-4.9-8-10.1V6l8-3.2Z" stroke="currentColor" stroke-width="1.6"/><path d="M8.2 11.9h7.6M9.4 9.1h5.2M9.4 14.8h5.2M12 9.1v5.7" stroke="currentColor" stroke-width="1.45" stroke-linecap="round"/><circle cx="12" cy="17.6" r=".8" fill="currentColor"/></svg>
             </div>
             <div>
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <span class="brand-title">ShadowVault Console</span>
+                    <span class="brand-title">ShadowVault</span>
                     <span style="font-size: 0.68rem; font-weight: 600; background: #F1F5F9; color: #475569; padding: 1px 6px; border-radius: 4px; border: 1px solid #E2E8F0;">v0.3.0</span>
                 </div>
-                <div class="brand-sub">Format-preserving, bi-directional PII proxy for AI agents and MCP tools</div>
+                <div class="brand-sub">Reversible, format-preserving PII proxy for AI agents · LangChain / LangGraph · MCP</div>
             </div>
         </div>
         <div class="header-actions">
             <span class="status-badge">
                 <span class="{'status-dot-live' if is_active else 'status-dot-ready'}"></span>
-                {'Pipeline active • ' + f'{last_ms:.2f} ms' if is_active else 'Engine ready'}
+                {'Pipeline active • ' + f'{last_ms:.2f} ms' if is_active else 'Ready to protect'}
             </span>
             <a href="https://github.com/dhirajparihar/shadow-vault" target="_blank" style="font-size: 0.75rem; color: #475569; text-decoration: none; border: 1px solid #E2E8F0; padding: 0.3rem 0.65rem; border-radius: 6px; background: #FFFFFF; font-weight: 500;">
                 GitHub ↗
             </a>
         </div>
     </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+st.markdown(
+    """
+    <section class="intro-block" aria-label="Playground introduction">
+      <div><div class="intro-kicker">PRIVACY LAB · INTERACTIVE DEMO</div>
+        <div class="intro-title">Keep real data out of model context.</div>
+        <div class="intro-copy">ShadowVault replaces sensitive values with format-preserving tokens, then restores originals only at trusted tool boundaries—preserving downstream schema compatibility without exposing real values to model context.</div>
+      </div>
+      <div class="local-note">DEMO MODE · Your prompt is processed by this Streamlit app runtime; no external model API is called.</div>
+    </section>
+    """,
+    unsafe_allow_html=True,
+)
+
+st.markdown(
+    """
+    <section class="flow-strip" aria-label="How the protection flow works">
+      <div class="flow-step"><b class="flow-n">1</b><div><strong>Detect & tokenize</strong><span>Replace sensitive input with format-preserving synthetic tokens.</span></div></div>
+      <div class="flow-step"><b class="flow-n">2</b><div><strong>Model-context preview</strong><span>Inspect the protected request; this demo does not make an external model call.</span></div></div>
+      <div class="flow-step"><b class="flow-n">3</b><div><strong>Trusted tool round trip</strong><span>Restore at the guarded tool, re-protect tool output, and demonstrate streamed re-hydration.</span></div></div>
+    </section>
     """,
     unsafe_allow_html=True,
 )
@@ -744,7 +810,7 @@ st.markdown(
                 <span style="font-size: 0.72rem; color: #64748B;">Target Tool: <code>{html.escape(current_scenario['tool_name'])}</code></span>
             </div>
             <div>
-                <span class="protocol-tag">POST /v1/chat/completions</span>
+                <span class="protocol-tag">DEMO · NO EXTERNAL MODEL CALL</span>
             </div>
         </div>
     </div>
@@ -753,6 +819,7 @@ st.markdown(
 )
 
 # Text Area inside the workbench
+st.markdown('<div class="sample-note"><strong>SYNTHETIC TEST FIXTURES</strong> · Example identities, payment details, and keys are fabricated for this demo. Use non-sensitive test input only.</div>', unsafe_allow_html=True)
 user_prompt = st.text_area(
     label="Agent Prompt Input",
     height=95,
@@ -764,7 +831,7 @@ st.session_state.prompt_text = user_prompt
 # Workbench Action Strip
 action_col1, action_col2, action_spacer = st.columns([0.30, 0.18, 0.52])
 with action_col1:
-    run_requested = st.button("Run protection pipeline", type="primary", use_container_width=True)
+    run_requested = st.button("Run privacy pipeline", type="primary", use_container_width=True)
 with action_col2:
     st.button("Reset example", on_click=on_reset_prompt_click, use_container_width=True)
 
@@ -877,22 +944,22 @@ if st.session_state.pipeline_result is not None:
         f"""
         <div class="telemetry-strip">
             <div class="telemetry-item">
-                <div class="telemetry-label">De-Identification Latency</div>
+                <div class="telemetry-label">Prompt scan</div>
                 <div class="telemetry-number">{res['dehydrate_ms']:.2f} ms</div>
                 <div class="telemetry-sub">Compiled regex & checksum scan</div>
             </div>
             <div class="telemetry-item">
-                <div class="telemetry-label">Tool Restoration Latency</div>
+                <div class="telemetry-label">Trusted restore</div>
                 <div class="telemetry-number">{res['tool_ms']:.3f} ms</div>
                 <div class="telemetry-sub">@vault_guard parameter injection</div>
             </div>
             <div class="telemetry-item">
-                <div class="telemetry-label">Stream Chunk Latency</div>
+                <div class="telemetry-label">Safe response stream</div>
                 <div class="telemetry-number">{res['stream_ms']:.3f} ms</div>
                 <div class="telemetry-sub">Lookahead buffer holdback</div>
             </div>
             <div class="telemetry-item">
-                <div class="telemetry-label">Session Vault Mappings</div>
+                <div class="telemetry-label">Active mappings</div>
                 <div class="telemetry-number">{records_count} active</div>
                 <div class="telemetry-sub">SQLite in-memory ({ttl_seconds}s TTL)</div>
             </div>
@@ -910,15 +977,15 @@ if st.session_state.pipeline_result is not None:
             """
             <div class="panel-card">
                 <div class="panel-header">
-                    <span class="panel-title">1. Trusted Input & Local Tool</span>
-                    <span class="panel-badge badge-ingress">Trusted Boundary</span>
+                    <span class="panel-title">01 · Detect & tokenize</span>
+                    <span class="panel-badge badge-ingress">Input detection</span>
                 </div>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-        st.markdown("<div style='font-size: 0.75rem; font-weight: 600; color: #475569; margin: 0.65rem 0 0.25rem 0;'>Original Prompt (Detected PII):</div>", unsafe_allow_html=True)
+        st.markdown("<div style='font-size: 0.75rem; font-weight: 600; color: #475569; margin: 0.65rem 0 0.25rem 0;'>Input prompt · detected values:</div>", unsafe_allow_html=True)
         highlighted_prompt = highlight_real_pii(res["prompt_text"])
         st.markdown(f'<div class="code-surface">{highlighted_prompt}</div>', unsafe_allow_html=True)
 
@@ -930,21 +997,21 @@ if st.session_state.pipeline_result is not None:
         st.markdown("<div style='font-size: 0.75rem; font-weight: 600; color: #475569; margin: 0.65rem 0 0.25rem 0;'>Sanitized Tool Output (Safe to Return):</div>", unsafe_allow_html=True)
         st.json(res["dehydrated_output"])
 
-    # Panel 2: Cloud Wire & Schema Validation
+    # Panel 2: Model payload preview & schema validation
     with col2:
         st.markdown(
             """
             <div class="panel-card">
                 <div class="panel-header">
-                    <span class="panel-title">2. Cloud LLM Wire Payload</span>
-                    <span class="panel-badge badge-egress">Zero Leakage</span>
+                    <span class="panel-title">02 · Model payload preview</span>
+                    <span class="panel-badge badge-egress">Tokenized preview · simulated</span>
                 </div>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-        st.markdown("<div style='font-size: 0.75rem; font-weight: 600; color: #475569; margin: 0.65rem 0 0.25rem 0;'>Forwarded Wire Text (Synthetic Tokens):</div>", unsafe_allow_html=True)
+        st.markdown("<div style='font-size: 0.75rem; font-weight: 600; color: #475569; margin: 0.65rem 0 0.25rem 0;'>Model request preview (synthetic tokens):</div>", unsafe_allow_html=True)
         active_session_map = store.get_session_map(session_id)
         highlighted_wire = highlight_synthetic_tokens(res["dehydrated_prompt"], active_session_map)
         st.markdown(f'<div class="code-surface">{highlighted_wire}</div>', unsafe_allow_html=True)
@@ -979,7 +1046,7 @@ if st.session_state.pipeline_result is not None:
             """
             <div class="panel-card">
                 <div class="panel-header">
-                    <span class="panel-title">3. Ephemeral Key-Value Store</span>
+                    <span class="panel-title">03 · Trusted restore + vault</span>
                     <span class="panel-badge badge-vault">In-Memory SQLite</span>
                 </div>
             </div>
@@ -1037,7 +1104,7 @@ else:
             """
             <div class="panel-card">
                 <div class="panel-header">
-                    <span class="panel-title">1. Trusted Input & Local Tool</span>
+                    <span class="panel-title">01 · Detect & tokenize</span>
                     <span class="panel-badge badge-ingress">Ingress</span>
                 </div>
                 <div class="panel-body">
@@ -1060,7 +1127,7 @@ Tool Guard: @vault_guard parameter re-hydration
             """
             <div class="panel-card">
                 <div class="panel-header">
-                    <span class="panel-title">2. Cloud LLM Wire Payload</span>
+                    <span class="panel-title">02 · Model payload preview</span>
                     <span class="panel-badge badge-egress">Egress</span>
                 </div>
                 <div class="panel-body">
@@ -1084,7 +1151,7 @@ Email/UPI: Valid RFC & NPCI handles
             """
             <div class="panel-card">
                 <div class="panel-header">
-                    <span class="panel-title">3. Ephemeral Key-Value Store</span>
+                    <span class="panel-title">03 · Trusted restore + vault</span>
                     <span class="panel-badge badge-vault">Store</span>
                 </div>
                 <div class="panel-body">

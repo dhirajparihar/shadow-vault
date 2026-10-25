@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ShadowVault — Enterprise PII Proxy Console</title>
+  <title>ShadowVault — Privacy protection playground</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -73,6 +73,44 @@
       margin: 1px 0;
     }
   </style>
+  <style>
+    :root{--ink:#14251f;--muted:#62736c;--line:#e2e9e3;--paper:#f5f7f3;--white:#fff;--green:#087f66;--green-dark:#05634f;--mint:#e9f6f0;--amber:#fff3df;--red:#b9534b;--shadow:0 12px 36px rgba(25,50,38,.055)}
+    *{box-sizing:border-box} body{background:var(--paper)!important;color:var(--ink)!important;font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;letter-spacing:-.012em}
+    header{background:rgba(255,255,255,.92)!important;border-color:var(--line)!important;box-shadow:0 1px 0 rgba(20,37,31,.03)}
+    header>div{max-width:1440px!important;padding-top:15px!important;padding-bottom:15px!important}
+    header h1{font-size:16px!important;letter-spacing:-.04em}.brand-mark{width:38px;height:38px;border-radius:12px;background:#102c25;color:#b7f1d8;display:grid;place-items:center;box-shadow:0 5px 12px #102c2522}
+    main{max-width:1440px!important;padding-top:30px!important;padding-bottom:34px!important}
+    .intro{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;margin-bottom:22px}
+    .intro-kicker{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.13em;color:var(--green);margin-bottom:9px;display:flex;align-items:center;gap:8px}
+    .intro h2{font-size:clamp(25px,3vw,34px);line-height:1.08;letter-spacing:-.055em;margin:0;color:var(--ink);font-weight:700}
+    .intro p{margin:9px 0 0;color:var(--muted);font-size:13px;max-width:560px;line-height:1.6}
+    .privacy-note{background:#eaf4ee;border:1px solid #d9e9de;color:#385f4d;padding:10px 13px;border-radius:12px;font-size:11px;font-weight:600;display:flex;align-items:center;gap:8px;white-space:normal;max-width:330px;line-height:1.5}
+    .flow-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:-5px 0 18px}
+    .flow-step{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;align-items:flex-start;gap:10px;min-width:0}
+    .flow-n{background:#e9f6f0;color:#087f66;width:24px;height:24px;border-radius:8px;display:grid;place-items:center;font-size:11px;font-weight:800;flex:none}
+    .flow-step strong{display:block;font-size:12px;color:var(--ink);margin:1px 0 3px}.flow-step span{display:block;font-size:10px;color:var(--muted);line-height:1.5}
+    .sample-note{font-size:10px;color:#755928;background:#fff7e8;border:1px solid #f0e0bd;border-radius:8px;padding:7px 10px;line-height:1.5}
+    @media(max-width:760px){.flow-strip{grid-template-columns:1fr}.privacy-note{max-width:none}}
+    .bg-surface-card{background:var(--white)!important}.border-border-default{border-color:var(--line)!important}.border-border-subtle{border-color:#edf1ed!important}
+    main>.bg-surface-card{border-radius:16px!important;box-shadow:var(--shadow)!important;padding:22px!important}
+    main>.bg-surface-card:first-of-type{border-top:3px solid var(--green)}
+    main>.grid.grid-cols-2>div{border-radius:13px!important;padding:15px!important;box-shadow:0 3px 14px rgba(25,50,38,.035)!important}
+    main>.grid.grid-cols-2>div>div:first-child{font-size:11px!important;color:#718078!important;letter-spacing:.01em}
+    main>.grid.grid-cols-2>div>div:nth-child(2){font-size:22px!important;letter-spacing:-.06em}
+    main>.grid.lg\:grid-cols-3>div{border-radius:15px!important;padding:18px!important;box-shadow:var(--shadow)!important;min-width:0}
+    textarea,select{border-color:#dce5de!important;background:#fbfcfa!important;border-radius:9px!important}
+    textarea{font-size:12px!important;line-height:1.8!important;padding:14px!important;min-height:94px}
+    button{border-radius:9px!important;transition:all .18s ease!important}button:hover{transform:translateY(-1px)}
+    #runBtn{background:var(--green)!important;box-shadow:0 6px 14px #087f6625!important;min-height:42px}#runBtn:hover{background:var(--green-dark)!important}
+    .token-real{background:#fff0e8!important;color:#a44731!important;border-color:#f5d1c1!important;border-radius:6px!important;padding:3px 7px!important}
+    .token-synthetic{background:#e8f6ef!important;color:#087454!important;border-color:#c4e7d4!important;border-radius:6px!important;padding:3px 7px!important}
+    #panel1Prompt,#panel2WirePayload,pre,#panel2Validators,#panel2StreamOutput{border-radius:10px!important;line-height:1.75!important}
+    table th{background:#f3f6f2!important}table td,table th{padding-top:10px!important;padding-bottom:10px!important}
+    #panel1ToolArgs,#panel1ToolOutput{white-space:pre-wrap;word-break:break-word}
+    footer{background:transparent!important;border-color:var(--line)!important}
+    @media(max-width:760px){main{padding:22px 16px!important}.intro{align-items:flex-start;flex-direction:column}.privacy-note{white-space:normal}.grid.lg\:grid-cols-3{gap:12px!important}header>div{padding-left:16px!important;padding-right:16px!important}}
+    @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition:none!important}}
+  </style>
 </head>
 <body class="bg-surface-page text-content-primary min-h-screen font-sans flex flex-col justify-between antialiased">
 
@@ -80,21 +118,21 @@
   <header class="border-b border-border-default bg-surface-card/90 backdrop-blur sticky top-0 z-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
       <div class="flex items-center gap-3">
-        <div class="w-8 h-8 rounded-lg bg-accent-teal text-white flex items-center justify-center font-bold text-sm shadow-sm">
-          <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <div class="brand-mark" aria-label="ShadowVault logo">
+          <svg width="23" height="23" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2.8 20 6v5.5c0 5.2-3.3 8.4-8 10.1-4.7-1.7-8-4.9-8-10.1V6l8-3.2Z" stroke="currentColor" stroke-width="1.6"/><path d="M8.2 11.9h7.6M9.4 9.1h5.2M9.4 14.8h5.2M12 9.1v5.7" stroke="currentColor" stroke-width="1.45" stroke-linecap="round"/><circle cx="12" cy="17.6" r=".8" fill="currentColor"/></svg>
         </div>
         <div>
           <div class="flex items-center gap-2">
-            <h1 class="text-base font-bold text-content-primary">ShadowVault Console</h1>
+            <h1 class="text-base font-bold text-content-primary">ShadowVault</h1>
             <span class="text-[11px] font-semibold text-content-secondary px-1.5 py-0.5 rounded border border-border-default bg-surface-muted">v0.3.0</span>
           </div>
-          <p class="text-xs text-content-secondary">Reversible, format-preserving PII proxy for AI agents & MCP tools</p>
+          <p class="text-xs text-content-secondary">Reversible, format-preserving PII proxy for AI agents, LangChain / LangGraph & MCP.</p>
         </div>
       </div>
       <div class="flex items-center gap-3 text-xs">
         <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-border-default bg-surface-card text-content-secondary font-medium">
           <span class="w-1.5 h-1.5 rounded-full bg-content-tertiary" id="statusDot"></span>
-          <span id="statusLabel">Pipeline ready</span>
+          <span id="statusLabel">Ready to protect</span>
         </span>
         <a href="https://github.com/dhirajparihar/shadow-vault" target="_blank" class="px-3 py-1.5 rounded-md border border-border-default hover:bg-surface-muted text-content-primary font-semibold transition flex items-center gap-1.5">
           <span>GitHub</span>
@@ -106,6 +144,15 @@
 
   <!-- Main Container -->
   <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 flex-1 w-full space-y-5">
+    <section class="intro" aria-label="Playground introduction">
+      <div><div class="intro-kicker"><span style="width:7px;height:7px;border-radius:50%;background:#087f66;display:inline-block"></span> PRIVACY LAB · INTERACTIVE DEMO</div><h2>Keep real data out of model context.</h2><p>ShadowVault replaces sensitive values with format-preserving tokens, then restores originals only at trusted tool boundaries—so schemas still work without exposing real values to model context.</p></div>
+      <div class="privacy-note"><span aria-hidden="true">◆</span> Browser-only simulation · No external model call; your prompt stays in this page.</div>
+    </section>
+    <section class="flow-strip" aria-label="How the protection flow works">
+      <div class="flow-step"><b class="flow-n">1</b><div><strong>Detect & tokenize</strong><span>Find sensitive values and substitute format-preserving tokens.</span></div></div>
+      <div class="flow-step"><b class="flow-n">2</b><div><strong>Model-context preview</strong><span>Inspect the tokenized payload. This playground does not call an external model.</span></div></div>
+      <div class="flow-step"><b class="flow-n">3</b><div><strong>Restore at trusted tools</strong><span>Resolve tokens only at the tool boundary; protect tool output and streamed responses.</span></div></div>
+    </section>
 
     <!-- Composer Section -->
     <div class="bg-surface-card border border-border-default rounded-xl p-5 shadow-sm space-y-4">
@@ -120,14 +167,15 @@
         </div>
         <div class="flex items-center gap-3 text-xs text-content-secondary">
           <span>Session: <strong id="sessionIdLabel" class="text-content-primary font-mono">session_playground_01</strong></span>
-          <button id="clearBtn" class="text-xs px-2.5 py-1 rounded border border-border-default hover:bg-surface-muted text-content-secondary transition">Purge Vault</button>
+          <button id="clearBtn" class="text-xs px-2.5 py-1 rounded border border-border-default hover:bg-surface-muted text-content-secondary transition">Clear session vault</button>
         </div>
       </div>
 
+      <div class="sample-note">SYNTHETIC TEST FIXTURES · Example identities, payment details, and keys are fabricated for this demo. Replace them with your own non-sensitive test input.</div>
       <!-- Text Area -->
       <div class="space-y-1.5">
         <div class="flex justify-between items-center text-xs">
-          <span class="font-semibold text-content-primary">Agent Prompt Composer:</span>
+          <span class="font-semibold text-content-primary">Your agent prompt</span>
           <span class="text-content-tertiary text-[11px] font-mono">Auto-scanned: Cards • Aadhaar • PAN • UPI • Email • Phone • SSN • Keys</span>
         </div>
         <textarea id="promptInput" rows="3" class="w-full bg-surface-card border border-border-default rounded-md p-3 text-xs text-content-primary font-mono focus:ring-1 focus:ring-accent-teal focus:border-accent-teal focus:outline-none resize-none leading-relaxed"></textarea>
@@ -136,7 +184,7 @@
       <!-- Run Action -->
       <div class="flex gap-3">
         <button id="runBtn" class="flex-1 py-2.5 px-4 rounded-md bg-accent-teal hover:bg-[#0D655E] text-white font-semibold text-xs tracking-wide shadow-sm transition flex items-center justify-center gap-2">
-          <span>Run protection pipeline</span>
+          <span>Run privacy pipeline</span>
         </button>
         <button id="resetBtn" class="py-2.5 px-4 rounded-md border border-border-default hover:bg-surface-muted text-content-secondary font-medium text-xs transition">
           Reset Example
@@ -147,22 +195,22 @@
     <!-- Live Performance Metrics Row -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
       <div class="bg-surface-card border border-border-default rounded-lg p-3 shadow-sm">
-        <div class="text-[11px] font-medium text-content-secondary mb-1">De-identification latency</div>
+        <div class="text-[11px] font-medium text-content-secondary mb-1">Prompt scan</div>
         <div id="metricDehydrate" class="text-xl font-bold font-mono text-content-primary">—</div>
         <div class="text-[10px] text-content-tertiary mt-0.5">Regex & checksum engine</div>
       </div>
       <div class="bg-surface-card border border-border-default rounded-lg p-3 shadow-sm">
-        <div class="text-[11px] font-medium text-content-secondary mb-1">Tool hydration latency</div>
+        <div class="text-[11px] font-medium text-content-secondary mb-1">Trusted restore</div>
         <div id="metricHydrate" class="text-xl font-bold font-mono text-content-primary">—</div>
         <div class="text-[10px] text-content-tertiary mt-0.5">@vault_guard parameter restore</div>
       </div>
       <div class="bg-surface-card border border-border-default rounded-lg p-3 shadow-sm">
-        <div class="text-[11px] font-medium text-content-secondary mb-1">Stream chunk latency</div>
+        <div class="text-[11px] font-medium text-content-secondary mb-1">Safe response stream</div>
         <div id="metricStream" class="text-xl font-bold font-mono text-content-primary">—</div>
         <div class="text-[10px] text-content-tertiary mt-0.5">Holdback buffer per chunk</div>
       </div>
       <div class="bg-surface-card border border-border-default rounded-lg p-3 shadow-sm">
-        <div class="text-[11px] font-medium text-content-secondary mb-1">Session vault mappings</div>
+        <div class="text-[11px] font-medium text-content-secondary mb-1">Active mappings</div>
         <div id="metricCount" class="text-xl font-bold font-mono text-content-primary">0 active</div>
         <div class="text-[10px] text-content-tertiary mt-0.5">SQLite in-memory with TTL</div>
       </div>
@@ -175,12 +223,12 @@
       <div class="bg-surface-card border border-border-default rounded-xl p-4 shadow-sm flex flex-col justify-between space-y-4">
         <div class="space-y-3.5">
           <div class="flex items-center justify-between border-b border-border-subtle pb-2.5">
-            <div class="text-xs font-bold text-content-primary">1. Trusted Input & Local Tool</div>
-            <span class="text-[10px] font-medium px-2 py-0.5 rounded bg-accent-red-bg text-accent-red border border-accent-red-border">Trusted Boundary</span>
+            <div class="text-xs font-bold text-content-primary">01 &nbsp; Detect & tokenize</div>
+            <span class="text-[10px] font-medium px-2 py-0.5 rounded bg-accent-red-bg text-accent-red border border-accent-red-border">Detection preview</span>
           </div>
 
           <div>
-            <div class="text-xs font-semibold text-content-secondary mb-1">Raw Client Prompt (Detected PII in Red):</div>
+            <div class="text-xs font-semibold text-content-secondary mb-1">Input prompt · detected values (highlighted):</div>
             <div id="panel1Prompt" class="p-3 rounded-md bg-[#F8FAFC] border border-border-default text-xs font-mono leading-relaxed text-content-primary min-h-[85px] whitespace-pre-wrap"></div>
           </div>
 
@@ -204,12 +252,12 @@
       <div class="bg-surface-card border border-border-default rounded-xl p-4 shadow-sm flex flex-col justify-between space-y-4">
         <div class="space-y-3.5">
           <div class="flex items-center justify-between border-b border-border-subtle pb-2.5">
-            <div class="text-xs font-bold text-content-primary">2. Cloud LLM Wire Payload</div>
-            <span class="text-[10px] font-medium px-2 py-0.5 rounded bg-accent-teal-bg text-accent-teal border border-accent-teal-border">Zero Leakage</span>
+            <div class="text-xs font-bold text-content-primary">02 &nbsp; Model payload preview</div>
+            <span class="text-[10px] font-medium px-2 py-0.5 rounded bg-accent-teal-bg text-accent-teal border border-accent-teal-border">Tokenized preview · simulated</span>
           </div>
 
           <div>
-            <div class="text-xs font-semibold text-content-secondary mb-1">Forwarded to Cloud LLM (Synthetic Tokens in Teal):</div>
+            <div class="text-xs font-semibold text-content-secondary mb-1">Model request preview (synthetic tokens):</div>
             <div id="panel2WirePayload" class="p-3 rounded-md bg-[#F8FAFC] border border-border-default text-xs font-mono leading-relaxed text-content-primary min-h-[85px] whitespace-pre-wrap"></div>
           </div>
 
@@ -229,7 +277,7 @@
       <div class="bg-surface-card border border-border-default rounded-xl p-4 shadow-sm flex flex-col justify-between space-y-4">
         <div class="space-y-3.5">
           <div class="flex items-center justify-between border-b border-border-subtle pb-2.5">
-            <div class="text-xs font-bold text-content-primary">3. Ephemeral Key-Value Store</div>
+            <div class="text-xs font-bold text-content-primary">03 &nbsp; Trusted restore + vault</div>
             <span class="text-[10px] font-medium px-2 py-0.5 rounded bg-accent-blue-bg text-accent-blue border border-accent-blue-border">In-Memory SQLite</span>
           </div>
 
@@ -615,7 +663,7 @@
     function resetToReadyState() {
       const currentPrompt = document.getElementById('promptInput').value;
       document.getElementById('statusDot').className = "w-1.5 h-1.5 rounded-full bg-content-tertiary";
-      document.getElementById('statusLabel').textContent = "Pipeline ready";
+      document.getElementById('statusLabel').textContent = "Ready to protect";
       document.getElementById('metricDehydrate').textContent = "—";
       document.getElementById('metricHydrate').textContent = "—";
       document.getElementById('metricStream').textContent = "—";
@@ -625,7 +673,7 @@
       document.getElementById('panel1ToolArgs').textContent = '{\n  "status": "Awaiting pipeline execution..."\n}';
       document.getElementById('panel1ToolOutput').textContent = '{\n  "status": "Idle"\n}';
 
-      document.getElementById('panel2WirePayload').textContent = "Click 'Run protection pipeline' to inspect cloud-safe synthetic payload.";
+      document.getElementById('panel2WirePayload').textContent = "Click 'Run privacy pipeline' to inspect cloud-safe synthetic payload.";
       document.getElementById('panel2Validators').innerHTML = '<div class="text-content-secondary text-xs">Validation rules will execute upon running the pipeline.</div>';
       document.getElementById('panel2StreamOutput').textContent = "Stream buffer idle.";
 
