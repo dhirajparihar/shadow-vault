@@ -10,6 +10,7 @@
 
 <p align="center">
   <a href="https://github.com/dhirajparihar/shadow-vault/actions"><img src="https://img.shields.io/badge/tests-82%20passed-brightgreen.svg" alt="Tests"></a>
+  <a href="https://colab.research.google.com/github/dhirajparihar/shadow-vault/blob/main/notebooks/shadow_vault_quickstart.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"></a>
   <a href="https://pypi.org/project/shadow-vault/"><img src="https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue.svg" alt="Python Versions"></a>
   <a href="https://github.com/dhirajparihar/shadow-vault/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"></a>
   <a href="https://dhirajparihar.github.io/shadow-vault/"><img src="https://img.shields.io/badge/live%20demo-GitHub%20Pages-emerald.svg" alt="Live Demo"></a>
@@ -96,7 +97,8 @@ Run the self-contained walkthroughs and cryptographic audits (requires NO API ke
 
 ```bash
 # 1. Independent Security & Cryptographic Self-Audit (6 automated checks):
-python -m shadow_vault.verify
+shadow-vault verify
+# or: python -m shadow_vault.verify
 
 # 2. End-to-End Real Agent Zero-Leak Wire-Inspection Proof:
 python examples/verify_agent_zero_leak.py
@@ -104,6 +106,18 @@ python examples/verify_agent_zero_leak.py
 # 3. Autonomous Model Context Protocol (MCP) Stdio Gateway & AES-256 Vault:
 python examples/demo_mcp_gateway.py
 ```
+
+---
+
+## 📚 Cookbooks & Interactive Tutorials
+
+| Resource | Description | Link |
+|:---|:---|:---:|
+| **Interactive Google Colab Quickstart** | Zero-install interactive walkthrough of dehydration, `@vault_guard`, streaming holdback buffer, and audit checks | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/dhirajparihar/shadow-vault/blob/main/notebooks/shadow_vault_quickstart.ipynb) |
+| **Claude Desktop MCP Guide** | Configure Anthropic's Claude Desktop application (`claude_desktop_config.json`) with `shadow-vault mcp-proxy` | [Read Cookbook](examples/cookbooks/claude_desktop_mcp.md) |
+| **LangGraph Customer Support Agent** | StateGraph multi-turn billing & dispute agent ensuring 0% raw PII in graph checkpoints or memory | [Run Script](examples/cookbooks/langgraph_customer_support.py) |
+| **Agent Zero-Leak Wire Verification** | Automated 5-assertion proof that 0% sensitive values touch external networks | [Run Script](examples/verify_agent_zero_leak.py) |
+
 
 ---
 
@@ -390,6 +404,7 @@ ShadowVault maintains an explicit, audited threat model and security disclosure 
 - **[THREAT_MODEL.md](THREAT_MODEL.md)**: Trust boundaries, STRIDE attacker vectors, AEAD cryptographic specifications, blind indexing derivations, and explicit non-goals.
 - **[SECURITY.md](SECURITY.md)**: Vulnerability disclosure SLA, responsible reporting contacts, and supported release branches.
 - **[Adversarial Security Suite](tests/test_adversarial_security.py)**: Automated regression tests verifying cross-session isolation, SQL injection prevention, high-concurrency race condition handling, and bit-flipping ciphertext rejection.
+- **[Reproducible Verification CLI](shadow_vault/verify.py)**: Run `shadow-vault verify` to independently execute 6 automated security checks covering AEAD roundtrips, blind index entropy, checksum integrity, and fail-closed leak blocking.
 
 ### Known Boundaries & Honest Limitations
 1. **Named Entity Recognition (Person Names):** Free-text unstructured names (e.g. "Dr. Gregory House") require the optional Presidio/spaCy NER adapter (`pip install "shadow-vault[presidio]"`). The core engine focuses on deterministic identifiers.

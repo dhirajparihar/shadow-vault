@@ -107,6 +107,12 @@ def create_parser() -> argparse.ArgumentParser:
         help="Run reproducible latency, throughput, and streaming benchmarks.",
     )
 
+    # 4. verify subcommand
+    subparsers.add_parser(
+        "verify",
+        help="Run reproducible security verification and cryptographic self-audit.",
+    )
+
     return parser
 
 
@@ -177,6 +183,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         else:
             sys.stderr.write(f"Benchmark script not found at: {bench_script}\n")
             return 1
+
+    elif args.subcommand == "verify":
+        from shadow_vault.verify import run_verification
+
+        success = run_verification()
+        return 0 if success else 1
 
     return 0
 
