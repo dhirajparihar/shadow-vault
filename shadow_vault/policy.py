@@ -60,6 +60,7 @@ class ToolPolicy:
     disallowed_entities: set[str] = field(default_factory=set)
     fail_closed: bool = False
     fail_action: FailClosedAction = FailClosedAction.RAISE
+    block_raw_tool_returns: bool = False
 
     def can_hydrate_entity(self, entity_type: str) -> bool:
         """Return True if the specified entity type is allowed to hydrate under this policy."""

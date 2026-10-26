@@ -36,6 +36,7 @@ class ShadowVault:
         fail_closed: bool = False,
         policy_manager: PolicyManager | None = None,
         custom_detectors: Iterable[Callable[[str], list[DetectedEntity]]] | None = None,
+        require_encryption: bool = False,
     ) -> None:
         """Initialize ShadowVault.
 
@@ -48,6 +49,7 @@ class ShadowVault:
             fail_closed: If True, blocks outbound leaks and enforces strict unmapped token policies.
             policy_manager: Optional PolicyManager for tool-level entity governance.
             custom_detectors: Optional list of custom detector callables (e.g. PresidioDetector).
+            require_encryption: If True, enforces that an encryption key must be provided.
         """
         if store is not None:
             self.store = store
@@ -57,6 +59,7 @@ class ShadowVault:
                 ttl_seconds=ttl_seconds,
                 encryption_key=encryption_key,
                 salt=salt,
+                require_encryption=require_encryption,
             )
         self.fail_closed = fail_closed
         self.policy_manager = policy_manager or PolicyManager(default_fail_closed=fail_closed)
@@ -129,6 +132,37 @@ class ShadowVault:
                 )
 
         return result
+
+    def assert_no_pii_leak(self, data: Any, session_id: str = "default") -> None:
+        """Scan data structure and raise PIILeakBlockedError if unmasked real PII is detected.
+
+        Useful for asserting that outbound agent payloads, tool returns, or logs do not contain raw PII.
+        """
+        if isinstance(data, str):
+            entities = detect_entities(data)
+            if self.custom_detectors:
+                for detector in self.custom_detectors:
+                    try:
+                        entities.extend(detector(data))
+                    except Exception:
+                        pass
+            unmasked = [e for e in entities if not is_synthetic(e.value)]
+            if unmasked:
+                raw_type = unmasked[0].entity_type
+                type_name = getattr(raw_type, "value", str(raw_type))
+                raise PIILeakBlockedError(
+                    entity_type=type_name,
+                    session_id=session_id,
+                )
+        elif isinstance(data, dict):
+            for v in data.values():
+                self.assert_no_pii_leak(v, session_id)
+        elif isinstance(data, (list, tuple, set)):
+            for item in data:
+                self.assert_no_pii_leak(item, session_id)
+        elif isinstance(data, BaseModel):
+            for field_name in data.model_fields:
+                self.assert_no_pii_leak(getattr(data, field_name), session_id)
 
     def _dehydrate_string(self, text: str, session_id: str) -> str:
         """Dehydrate a single text string using right-to-left substitution."""

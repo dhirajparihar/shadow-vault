@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/dhirajparihar/shadow-vault/actions"><img src="https://img.shields.io/badge/tests-75%20passed-brightgreen.svg" alt="Tests"></a>
+  <a href="https://github.com/dhirajparihar/shadow-vault/actions"><img src="https://img.shields.io/badge/tests-82%20passed-brightgreen.svg" alt="Tests"></a>
   <a href="https://pypi.org/project/shadow-vault/"><img src="https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue.svg" alt="Python Versions"></a>
   <a href="https://github.com/dhirajparihar/shadow-vault/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"></a>
   <a href="https://dhirajparihar.github.io/shadow-vault/"><img src="https://img.shields.io/badge/live%20demo-GitHub%20Pages-emerald.svg" alt="Live Demo"></a>
@@ -90,16 +90,19 @@ result = charge_customer(email="u_c09753@shadow.vault", card="4000009995970590",
 
 ---
 
-## Interactive Zero-Key Terminal Demos
+## 🔬 Zero-Key Reproducible Demos & Verification
 
-Run the self-contained walkthroughs (requires NO API keys and NO external dependencies):
+Run the self-contained walkthroughs and cryptographic audits (requires NO API keys and NO external dependencies):
 
 ```bash
-# 1. Autonomous Model Context Protocol (MCP) Stdio Gateway & AES-256 Vault:
-python examples/demo_mcp_gateway.py
+# 1. Independent Security & Cryptographic Self-Audit (6 automated checks):
+python -m shadow_vault.verify
 
-# 2. End-to-End Agent Roundtrip with Streaming SSE Re-hydration:
-python examples/demo_agent_roundtrip.py
+# 2. End-to-End Real Agent Zero-Leak Wire-Inspection Proof:
+python examples/verify_agent_zero_leak.py
+
+# 3. Autonomous Model Context Protocol (MCP) Stdio Gateway & AES-256 Vault:
+python examples/demo_mcp_gateway.py
 ```
 
 ---
@@ -139,16 +142,20 @@ streamlit run playground/app.py
 
 ---
 
-## Why `shadow-vault`?
+## Why `shadow-vault`? (Ecosystem Positioning)
 
-| Capability | `shadow-vault` | Microsoft Presidio | LangChain `PIIMiddleware` |
-|:---|:---:|:---:|:---:|
-| **Format-Preserving Tokenization** | **Yes** *(Pydantic & regex valid)* | No *(replaces with `<EMAIL>`)* | No *(replaces with `[REDACTED]`)* |
-| **Reversible Tool Calls (MCP & Python)** | **Yes** *(auto-hydrates at boundary)* | Manual *(requires custom glue)* | No *(one-way irreversible)* |
-| **SSE Stream Safe (Zero Token Tearing)** | **Yes** *(lookahead holdback buffer)* | No *(chunks break tokens)* | No |
-| **Zero Heavy NLP Dependencies** | **Yes** *(~0 MB, pure Python + SQLite)* | No *(requires spaCy / PyTorch ~500MB)* | Yes |
-| **Mathematical Checksum Validation** | **Yes** *(Luhn & Verhoeff algorithms)* | Partial | No |
-| **Thread-Safe Session SQLite Storage** | **Yes** *(built-in with TTL expiration)* | Requires External DB | None |
+| Architectural Capability | `shadow-vault` | Rizzo PII | Microsoft Presidio | LangChain `PIIMiddleware` |
+|:---|:---:|:---:|:---:|:---:|
+| **Primary Focus** | **AI Agent Tools & MCP** | Document Anonymization (Italian Legal) | Document Redaction / NLP Extraction | Simple Prompt Pre-filtering |
+| **Format-Preserving Tokens** | **Yes** *(Pydantic & regex valid)* | No *(replaces with `<LOC>`, `<PER>`)* | No *(replaces with `<EMAIL>`)* | No *(replaces with `[REDACTED]`)* |
+| **Reversible Tool Boundaries** | **Yes** *(auto-hydrates at tool)* | No *(one-way document masking)* | Manual *(requires custom glue)* | No *(one-way irreversible)* |
+| **Model Context Protocol (MCP)** | **Yes** *(stdio JSON-RPC gateway)* | No | No | No |
+| **SSE Stream Safe (No Tearing)** | **Yes** *(lookahead holdback buffer)* | No | No | No |
+| **Zero-ML Core Footprint** | **Yes** *(~0 MB, pure Python)* | No *(trained local model weights)* | No *(~500MB spaCy / PyTorch)* | Yes |
+| **At-Rest Database Encryption** | **AES-256-GCM + Blind Index** | SQLite / Local File Plaintext | External DB Dependent | None |
+| **Fail-Closed Policy Controls** | **Yes** *(REDACT / RAISE / BLOCK)* | No | No | No |
+
+> **Positioning Note:** If you are anonymizing static PDF/Word legal contracts in Italian, use **Rizzo PII**. If you need an enterprise NLP server for bulk text extraction, use **Microsoft Presidio**. If you are running autonomous AI agents (LangGraph, CrewAI, Claude Desktop) that make downstream tool calls and cannot tolerate broken schemas or leaked credentials, use **ShadowVault**.
 
 ---
 
@@ -377,22 +384,36 @@ python benchmarks/run_benchmarks.py
 
 ---
 
+## 🛡️ Security Assurance & Threat Model
+
+ShadowVault maintains an explicit, audited threat model and security disclosure policy:
+- **[THREAT_MODEL.md](THREAT_MODEL.md)**: Trust boundaries, STRIDE attacker vectors, AEAD cryptographic specifications, blind indexing derivations, and explicit non-goals.
+- **[SECURITY.md](SECURITY.md)**: Vulnerability disclosure SLA, responsible reporting contacts, and supported release branches.
+- **[Adversarial Security Suite](tests/test_adversarial_security.py)**: Automated regression tests verifying cross-session isolation, SQL injection prevention, high-concurrency race condition handling, and bit-flipping ciphertext rejection.
+
+### Known Boundaries & Honest Limitations
+1. **Named Entity Recognition (Person Names):** Free-text unstructured names (e.g. "Dr. Gregory House") require the optional Presidio/spaCy NER adapter (`pip install "shadow-vault[presidio]"`). The core engine focuses on deterministic identifiers.
+2. **Structural Preservation:** Format-preserving tokens intentionally maintain length and type (e.g. 16-digit cards). While the value is synthetic, an observer can deduce the field type.
+3. **In-Process Keys:** Process memory dumps are out-of-scope for application libraries. Enforce OS-level container isolation and set persistent vault keys via `SHADOW_VAULT_KEY`.
+
+---
+
 ## Running Tests
 
 ```bash
 pytest -v
-# 75 passed in 3.27s (100% pass rate)
+# 82 passed in 3.26s (100% pass rate)
 ```
 
 ---
 
 ## Contributing
 
-Contributions are welcome! Read [CONTRIBUTING.md](file:///c:/Users/HP/Desktop/projectios/shadow-vault/CONTRIBUTING.md) to see how you can add a new regional PII detector in under 20 lines of code.
+Contributions are welcome! Read [CONTRIBUTING.md](CONTRIBUTING.md) to see how you can add a new regional PII detector in under 20 lines of code.
 
 ---
 
 ## License
 
-Distributed under the MIT License. See [LICENSE](file:///c:/Users/HP/Desktop/projectios/shadow-vault/LICENSE) for details.
+Distributed under the MIT License. See [LICENSE](LICENSE) for details.
 

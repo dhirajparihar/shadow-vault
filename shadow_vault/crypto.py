@@ -28,6 +28,8 @@ try:
 except ImportError:
     AESGCM = None  # type: ignore
 
+HAS_CRYPTOGRAPHY: Final[bool] = _HAS_CRYPTOGRAPHY
+
 
 def derive_key(secret: str | bytes, salt: bytes = b"shadow-vault-v1-salt") -> bytes:
     """Derive a 256-bit (32-byte) cryptographic key from a secret string or bytes.

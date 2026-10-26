@@ -9,6 +9,7 @@ import os
 import sqlite3
 import threading
 import time
+import warnings
 from typing import Callable
 
 
@@ -30,6 +31,7 @@ class VaultStore:
         encryption_key: str | bytes | None = None,
         salt: str | bytes | None = None,
         hash_size: int = 3,
+        require_encryption: bool = False,
     ) -> None:
         """Initialize a new VaultStore instance.
 
@@ -40,6 +42,7 @@ class VaultStore:
                 Can also be provided via SHADOW_VAULT_KEY or SHADOW_VAULT_ENCRYPTION_KEY env vars.
             salt: Optional session salt for deterministic token hashing.
             hash_size: Digest size in bytes for short hash generator (default 3 bytes = 6 hex chars).
+            require_encryption: If True, raises ValueError if no valid encryption key is supplied.
         """
         self.db_path = db_path
         self.ttl_seconds = ttl_seconds
@@ -53,6 +56,22 @@ class VaultStore:
             or os.environ.get("SHADOW_VAULT_KEY")
             or os.environ.get("SHADOW_VAULT_ENCRYPTION_KEY")
         )
+        enforce_crypto = require_encryption or os.environ.get("SHADOW_VAULT_REQUIRE_ENCRYPTION") == "1"
+        if enforce_crypto and not raw_key:
+            raise ValueError(
+                "VaultStore requires an encryption key when require_encryption=True "
+                "or SHADOW_VAULT_REQUIRE_ENCRYPTION=1."
+            )
+
+        if db_path != ":memory:" and not raw_key:
+            warnings.warn(
+                "VaultStore initialized with a persistent file database without an encryption key! "
+                "Sensitive values will be stored unencrypted on disk. "
+                "Pass encryption_key or set SHADOW_VAULT_KEY to enable authenticated AES-256-GCM encryption.",
+                category=UserWarning,
+                stacklevel=2,
+            )
+
         self._enc_key: bytes | None = derive_key(raw_key) if raw_key else None
         self._salt: bytes | None = (
             salt.encode("utf-8") if isinstance(salt, str) else salt

@@ -41,6 +41,7 @@ def vault_guard(
     policy: ToolPolicy | None = None,
     tool_name: str | None = None,
     fail_closed: bool | None = None,
+    block_leaks: bool = False,
 ) -> Callable[[F], F]:
     """Decorator guarding sync and async Python functions against PII leakage.
 
@@ -56,6 +57,7 @@ def vault_guard(
         policy: Optional ToolPolicy defining entity hydration permissions and fail-closed rules.
         tool_name: Optional tool identifier (defaults to func.__name__).
         fail_closed: Optional override to enforce fail-closed unmapped token checks.
+        block_leaks: If True or policy.block_raw_tool_returns is True, raises PIILeakBlockedError if output contains raw PII.
 
     Returns:
         Decorated function with automatic bi-directional PII conversion.
@@ -92,6 +94,10 @@ def vault_guard(
                 }
                 # Execute with real data
                 result = await func(*hydrated_args, **hydrated_kwargs)
+                # Assert no raw PII leak if tool is forbidden from emitting PII
+                active_policy = policy or (vault.policy_manager.get_policy(effective_tool_name) if hasattr(vault, "policy_manager") else None)
+                if block_leaks or (active_policy is not None and getattr(active_policy, "block_raw_tool_returns", False)):
+                    vault.assert_no_pii_leak(result, session_id=session_id)
                 # Dehydrate outputs to synthetic tokens
                 return vault.dehydrate(result, session_id=session_id)
 
@@ -125,6 +131,10 @@ def vault_guard(
                 }
                 # Execute with real data
                 result = func(*hydrated_args, **hydrated_kwargs)
+                # Assert no raw PII leak if tool is forbidden from emitting PII
+                active_policy = policy or (vault.policy_manager.get_policy(effective_tool_name) if hasattr(vault, "policy_manager") else None)
+                if block_leaks or (active_policy is not None and getattr(active_policy, "block_raw_tool_returns", False)):
+                    vault.assert_no_pii_leak(result, session_id=session_id)
                 # Dehydrate outputs to synthetic tokens
                 return vault.dehydrate(result, session_id=session_id)
 
