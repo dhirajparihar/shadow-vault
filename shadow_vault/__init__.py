@@ -3,6 +3,12 @@ shadow-vault: A bi-directional, format-preserving reversible PII proxy for AI ag
 LangChain/LangGraph, and MCP tools.
 """
 
+from shadow_vault.crypto import (
+    blind_index,
+    decrypt_value,
+    derive_key,
+    encrypt_value,
+)
 from shadow_vault.detectors import (
     DetectedEntity,
     EntityType,
@@ -21,7 +27,14 @@ from shadow_vault.detectors import (
 )
 from shadow_vault.engine import ShadowVault
 from shadow_vault.integrations.decorators import vault_guard
-from shadow_vault.integrations.mcp_proxy import MCPVaultInterceptor
+from shadow_vault.integrations.mcp_proxy import MCPVaultInterceptor, run_mcp_stdio_proxy
+from shadow_vault.policy import (
+    FailClosedAction,
+    PIILeakBlockedError,
+    PolicyManager,
+    ToolPolicy,
+    UnmappedTokenError,
+)
 from shadow_vault.store import VaultStore
 from shadow_vault.stream import StreamHydrator
 
@@ -43,6 +56,7 @@ except ImportError:
 from shadow_vault.synthesizer import (
     SYNTHETIC_PREFIXES,
     calculate_luhn_check_digit,
+    find_synthetic_tokens,
     is_synthetic,
     synthesize_token,
 )
@@ -54,16 +68,29 @@ __all__ = [
     "ShadowVault",
     "VaultStore",
     "StreamHydrator",
+    # Policies & Security
+    "ToolPolicy",
+    "PolicyManager",
+    "FailClosedAction",
+    "UnmappedTokenError",
+    "PIILeakBlockedError",
+    # Cryptography
+    "encrypt_value",
+    "decrypt_value",
+    "derive_key",
+    "blind_index",
     # Integrations
     "vault_guard",
     "protect_tool",
     "ProtectedTool",
     "ShadowVaultChatWrapper",
     "MCPVaultInterceptor",
+    "run_mcp_stdio_proxy",
     "create_proxy_app",
     # Synthesis
     "synthesize_token",
     "is_synthetic",
+    "find_synthetic_tokens",
     "calculate_luhn_check_digit",
     "SYNTHETIC_PREFIXES",
     # Detection

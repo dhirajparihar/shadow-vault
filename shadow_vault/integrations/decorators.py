@@ -9,6 +9,7 @@ import inspect
 from typing import Any, Callable, TypeVar
 
 from shadow_vault.engine import ShadowVault
+from shadow_vault.policy import ToolPolicy
 
 F = TypeVar("F", bound=Callable[..., Any])
 
@@ -37,11 +38,14 @@ def _extract_session_id(
 def vault_guard(
     vault: ShadowVault,
     session_id_arg: str = "session_id",
+    policy: ToolPolicy | None = None,
+    tool_name: str | None = None,
+    fail_closed: bool | None = None,
 ) -> Callable[[F], F]:
     """Decorator guarding sync and async Python functions against PII leakage.
 
     1. Intercepts incoming *args and **kwargs, hydrating synthetic tokens to real values
-       right before function execution.
+       right before function execution (subject to ToolPolicy constraints).
     2. Executes the function with real values (e.g. database query, payment processing).
     3. Dehydrates the return value before returning back to the AI agent or caller,
        ensuring any new PII is masked with format-preserving synthetic tokens.
@@ -49,21 +53,42 @@ def vault_guard(
     Args:
         vault: ShadowVault instance managing the session mappings.
         session_id_arg: Name of the argument holding the session identifier.
+        policy: Optional ToolPolicy defining entity hydration permissions and fail-closed rules.
+        tool_name: Optional tool identifier (defaults to func.__name__).
+        fail_closed: Optional override to enforce fail-closed unmapped token checks.
 
     Returns:
         Decorated function with automatic bi-directional PII conversion.
     """
 
     def decorator(func: F) -> F:
+        effective_tool_name = tool_name or func.__name__
+
         if inspect.iscoroutinefunction(func):
 
             @functools.wraps(func)
             async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
                 session_id = _extract_session_id(func, session_id_arg, args, kwargs)
-                # Hydrate inputs from synthetic to real PII
-                hydrated_args = [vault.hydrate(arg, session_id=session_id) for arg in args]
+                # Hydrate inputs from synthetic to real PII according to policy
+                hydrated_args = [
+                    vault.hydrate(
+                        arg,
+                        session_id=session_id,
+                        tool_name=effective_tool_name,
+                        policy=policy,
+                        fail_closed=fail_closed,
+                    )
+                    for arg in args
+                ]
                 hydrated_kwargs = {
-                    k: vault.hydrate(v, session_id=session_id) for k, v in kwargs.items()
+                    k: vault.hydrate(
+                        v,
+                        session_id=session_id,
+                        tool_name=effective_tool_name,
+                        policy=policy,
+                        fail_closed=fail_closed,
+                    )
+                    for k, v in kwargs.items()
                 }
                 # Execute with real data
                 result = await func(*hydrated_args, **hydrated_kwargs)
@@ -77,10 +102,26 @@ def vault_guard(
             @functools.wraps(func)
             def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
                 session_id = _extract_session_id(func, session_id_arg, args, kwargs)
-                # Hydrate inputs from synthetic to real PII
-                hydrated_args = [vault.hydrate(arg, session_id=session_id) for arg in args]
+                # Hydrate inputs from synthetic to real PII according to policy
+                hydrated_args = [
+                    vault.hydrate(
+                        arg,
+                        session_id=session_id,
+                        tool_name=effective_tool_name,
+                        policy=policy,
+                        fail_closed=fail_closed,
+                    )
+                    for arg in args
+                ]
                 hydrated_kwargs = {
-                    k: vault.hydrate(v, session_id=session_id) for k, v in kwargs.items()
+                    k: vault.hydrate(
+                        v,
+                        session_id=session_id,
+                        tool_name=effective_tool_name,
+                        policy=policy,
+                        fail_closed=fail_closed,
+                    )
+                    for k, v in kwargs.items()
                 }
                 # Execute with real data
                 result = func(*hydrated_args, **hydrated_kwargs)

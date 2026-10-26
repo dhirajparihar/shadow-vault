@@ -8,8 +8,15 @@ from typing import Any, Mapping
 from pydantic import BaseModel
 
 from shadow_vault.detectors import detect_entities
+from shadow_vault.policy import (
+    FailClosedAction,
+    PIILeakBlockedError,
+    PolicyManager,
+    ToolPolicy,
+    UnmappedTokenError,
+)
 from shadow_vault.store import VaultStore
-from shadow_vault.synthesizer import is_synthetic, synthesize_token
+from shadow_vault.synthesizer import find_synthetic_tokens, is_synthetic, synthesize_token
 
 
 class ShadowVault:
@@ -20,6 +27,10 @@ class ShadowVault:
         store: VaultStore | None = None,
         db_path: str = ":memory:",
         ttl_seconds: float | None = None,
+        encryption_key: str | bytes | None = None,
+        salt: str | bytes | None = None,
+        fail_closed: bool = False,
+        policy_manager: PolicyManager | None = None,
     ) -> None:
         """Initialize ShadowVault.
 
@@ -27,11 +38,26 @@ class ShadowVault:
             store: Optional pre-configured VaultStore instance.
             db_path: Path to SQLite file or ':memory:' if store is not supplied.
             ttl_seconds: Optional TTL expiration in seconds for stored mappings.
+            encryption_key: Optional key for authenticated AES/keystream encryption at rest.
+            salt: Optional session salt for deterministic hashing.
+            fail_closed: If True, blocks outbound leaks and enforces strict unmapped token policies.
+            policy_manager: Optional PolicyManager for tool-level entity governance.
         """
         if store is not None:
             self.store = store
         else:
-            self.store = VaultStore(db_path=db_path, ttl_seconds=ttl_seconds)
+            self.store = VaultStore(
+                db_path=db_path,
+                ttl_seconds=ttl_seconds,
+                encryption_key=encryption_key,
+                salt=salt,
+            )
+        self.fail_closed = fail_closed
+        self.policy_manager = policy_manager or PolicyManager(default_fail_closed=fail_closed)
+
+    def register_tool_policy(self, policy: ToolPolicy) -> None:
+        """Register a privacy policy governing a specific tool."""
+        self.policy_manager.register_policy(policy)
 
     def dehydrate(self, data: Any, session_id: str = "default", ttl: float | None = None) -> Any:
         """Recursively scan data and substitute real PII with format-preserving synthetic tokens.
@@ -76,7 +102,18 @@ class ShadowVault:
             return tuple(self.dehydrate(item, session_id) for item in data)
 
         # 6. Primitive types (int, float, bool, etc.)
-        return data
+        result = data
+
+        if self.fail_closed and isinstance(result, str):
+            entities = detect_entities(result)
+            unmasked = [e for e in entities if not is_synthetic(e.value)]
+            if unmasked:
+                raise PIILeakBlockedError(
+                    entity_type=unmasked[0].entity_type.value,
+                    session_id=session_id,
+                )
+
+        return result
 
     def _dehydrate_string(self, text: str, session_id: str) -> str:
         """Dehydrate a single text string using right-to-left substitution."""
@@ -117,7 +154,14 @@ class ShadowVault:
             # Fallback to model_copy with field overrides if custom validators reject
             return model.model_copy(update=fields_data)
 
-    def hydrate(self, data: Any, session_id: str = "default") -> Any:
+    def hydrate(
+        self,
+        data: Any,
+        session_id: str = "default",
+        tool_name: str | None = None,
+        policy: ToolPolicy | None = None,
+        fail_closed: bool | None = None,
+    ) -> Any:
         """Recursively restore original PII values from synthetic tokens.
 
         Traverses strings, dictionaries, lists, tuples, and Pydantic BaseModel instances.
@@ -127,15 +171,85 @@ class ShadowVault:
         Args:
             data: Data structure containing synthetic tokens to de-anonymize.
             session_id: Session identifier to retrieve mappings from.
+            tool_name: Optional tool name to apply registered ToolPolicy.
+            policy: Optional explicit ToolPolicy overriding registered policy.
+            fail_closed: Optional override to enforce fail-closed unmapped token checks.
 
         Returns:
             Hydrated data structure with original real PII restored.
         """
-        session_map = self.store.get_session_map(session_id)
-        if not session_map:
+        effective_policy = policy or self.policy_manager.get_policy(tool_name)
+        is_fail_closed = (
+            fail_closed
+            if fail_closed is not None
+            else (effective_policy.fail_closed if effective_policy else self.fail_closed)
+        )
+
+        # If policy disallows hydration for this tool, return data without restoring real PII
+        if effective_policy and not effective_policy.allow_hydration:
             return data
 
-        return self._hydrate_recursive(data, session_map, session_id)
+        allowed_entities = effective_policy.allowed_entities if effective_policy else None
+        session_map = self.store.get_session_map(
+            session_id, allowed_entity_types=allowed_entities
+        )
+
+        if not session_map:
+            result = data
+        else:
+            result = self._hydrate_recursive(data, session_map, session_id)
+
+        if is_fail_closed:
+            result = self._enforce_fail_closed(result, session_id, effective_policy)
+
+        return result
+
+    def _enforce_fail_closed(
+        self,
+        data: Any,
+        session_id: str,
+        policy: ToolPolicy | None,
+    ) -> Any:
+        """Recursively check for unmapped synthetic tokens in hydrated output."""
+        action = policy.fail_action if policy else FailClosedAction.RAISE
+
+        if isinstance(data, str):
+            unmapped = find_synthetic_tokens(data)
+            if unmapped:
+                if action == FailClosedAction.RAISE:
+                    raise UnmappedTokenError(token=unmapped[0], session_id=session_id)
+                elif action == FailClosedAction.REDACT:
+                    redacted = data
+                    for token in unmapped:
+                        redacted = redacted.replace(token, "[UNRESOLVED_TOKEN]")
+                    return redacted
+            return data
+
+        if isinstance(data, dict):
+            return {
+                k: self._enforce_fail_closed(v, session_id, policy)
+                for k, v in data.items()
+            }
+
+        if isinstance(data, list):
+            return [self._enforce_fail_closed(item, session_id, policy) for item in data]
+
+        if isinstance(data, tuple):
+            return tuple(self._enforce_fail_closed(item, session_id, policy) for item in data)
+
+        if isinstance(data, BaseModel):
+            fields_data = {
+                field_name: self._enforce_fail_closed(
+                    getattr(data, field_name), session_id, policy
+                )
+                for field_name in data.__class__.model_fields
+            }
+            try:
+                return data.__class__(**fields_data)
+            except Exception:
+                return data.model_copy(update=fields_data)
+
+        return data
 
     def _hydrate_recursive(
         self,

@@ -32,7 +32,7 @@ class MCPVaultInterceptor:
         """Intercept an MCP JSON-RPC request.
 
         If method is 'tools/call', hydrates the arguments dictionary to restore
-        real PII before passing to the tool server.
+        real PII before passing to the tool server (subject to ToolPolicy).
 
         Args:
             request: MCP JSON-RPC request dictionary.
@@ -48,7 +48,12 @@ class MCPVaultInterceptor:
         if method == "tools/call":
             params = request.get("params")
             if isinstance(params, dict) and "arguments" in params:
-                hydrated_args = self.vault.hydrate(params["arguments"], session_id=session_id)
+                tool_name = params.get("name")
+                hydrated_args = self.vault.hydrate(
+                    params["arguments"],
+                    session_id=session_id,
+                    tool_name=tool_name,
+                )
                 params_copy = dict(params)
                 params_copy["arguments"] = hydrated_args
                 req_copy = dict(request)
@@ -129,3 +134,119 @@ class MCPVaultInterceptor:
         data = json.loads(json_str)
         modified = self.intercept_message(data, session_id=session_id)
         return json.dumps(modified)
+
+
+import subprocess
+import sys
+import threading
+from typing import TextIO
+
+
+def run_mcp_stdio_proxy(
+    downstream_command: list[str],
+    vault: ShadowVault | None = None,
+    session_id: str = "default",
+    stdin_stream: TextIO | None = None,
+    stdout_stream: TextIO | None = None,
+    stderr_stream: TextIO | None = None,
+) -> int:
+    """Run a transparent Model Context Protocol (MCP) stdio gateway.
+
+    Spawns downstream MCP server command as a subprocess, intercepting JSON-RPC
+    stdio communication:
+    - Client -> Downstream: restores real PII for 'tools/call' arguments.
+    - Downstream -> Client: dehydrates results before sending back to LLM agent.
+
+    Args:
+        downstream_command: Command line arguments to spawn the real MCP server.
+        vault: Optional ShadowVault instance (creates default instance if omitted).
+        session_id: Session identifier for scoping PII mappings.
+        stdin_stream: Stream providing client JSON-RPC input (defaults to sys.stdin).
+        stdout_stream: Stream sending responses to client (defaults to sys.stdout).
+        stderr_stream: Stream forwarding downstream error logs (defaults to sys.stderr).
+
+    Returns:
+        Process exit code of the downstream MCP server.
+    """
+    if vault is None:
+        vault = ShadowVault()
+
+    interceptor = MCPVaultInterceptor(vault)
+    in_stream = stdin_stream or sys.stdin
+    out_stream = stdout_stream or sys.stdout
+    err_stream = stderr_stream or sys.stderr
+
+    process = subprocess.Popen(
+        downstream_command,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        bufsize=1,  # Line buffered
+    )
+
+    def forward_stdin() -> None:
+        try:
+            for line in iter(in_stream.readline, ""):
+                if not line:
+                    break
+                trimmed = line.strip()
+                if trimmed:
+                    try:
+                        modified_line = interceptor.intercept_json(trimmed, session_id=session_id)
+                        process.stdin.write(modified_line + "\n")  # type: ignore[union-attr]
+                    except Exception:
+                        process.stdin.write(line)  # type: ignore[union-attr]
+                else:
+                    process.stdin.write(line)  # type: ignore[union-attr]
+                process.stdin.flush()  # type: ignore[union-attr]
+        except Exception:
+            pass
+        finally:
+            try:
+                process.stdin.close()  # type: ignore[union-attr]
+            except Exception:
+                pass
+
+    def forward_stdout() -> None:
+        try:
+            for line in iter(process.stdout.readline, ""):  # type: ignore[union-attr]
+                if not line:
+                    break
+                trimmed = line.strip()
+                if trimmed:
+                    try:
+                        modified_line = interceptor.intercept_json(trimmed, session_id=session_id)
+                        out_stream.write(modified_line + "\n")
+                    except Exception:
+                        out_stream.write(line)
+                else:
+                    out_stream.write(line)
+                out_stream.flush()
+        except Exception:
+            pass
+
+    def forward_stderr() -> None:
+        try:
+            for line in iter(process.stderr.readline, ""):  # type: ignore[union-attr]
+                if not line:
+                    break
+                err_stream.write(line)
+                err_stream.flush()
+        except Exception:
+            pass
+
+    t_in = threading.Thread(target=forward_stdin, daemon=True)
+    t_out = threading.Thread(target=forward_stdout, daemon=True)
+    t_err = threading.Thread(target=forward_stderr, daemon=True)
+
+    t_in.start()
+    t_out.start()
+    t_err.start()
+
+    exit_code = process.wait()
+    t_out.join(timeout=1.0)
+    t_err.join(timeout=1.0)
+
+    return exit_code
+

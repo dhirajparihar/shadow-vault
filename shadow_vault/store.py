@@ -12,28 +12,51 @@ import time
 from typing import Callable
 
 
+from shadow_vault.crypto import blind_index, decrypt_value, derive_key, encrypt_value
+
+
 class VaultStore:
     """Thread-safe SQLite store for bi-directional session PII mappings.
 
     Maintains format-preserving synthetic tokens for real PII values with support
-    for in-memory and file-based databases, TTL expiration, and length-ordered reverse maps.
+    for in-memory and file-based databases, TTL expiration, authenticated encryption at rest,
+    and length-ordered reverse maps.
     """
 
     def __init__(
         self,
         db_path: str = ":memory:",
         ttl_seconds: float | None = None,
+        encryption_key: str | bytes | None = None,
+        salt: str | bytes | None = None,
+        hash_size: int = 3,
     ) -> None:
         """Initialize a new VaultStore instance.
 
         Args:
             db_path: Path to SQLite file or ':memory:' for transient storage.
             ttl_seconds: Optional time-to-live in seconds for session mappings.
+            encryption_key: Optional secret key or password for AES/authenticated at-rest encryption.
+                Can also be provided via SHADOW_VAULT_KEY or SHADOW_VAULT_ENCRYPTION_KEY env vars.
+            salt: Optional session salt for deterministic token hashing.
+            hash_size: Digest size in bytes for short hash generator (default 3 bytes = 6 hex chars).
         """
         self.db_path = db_path
         self.ttl_seconds = ttl_seconds
+        self.hash_size = hash_size
         self._lock = threading.RLock()
         self._is_closed = False
+
+        # Configure encryption key
+        raw_key = (
+            encryption_key
+            or os.environ.get("SHADOW_VAULT_KEY")
+            or os.environ.get("SHADOW_VAULT_ENCRYPTION_KEY")
+        )
+        self._enc_key: bytes | None = derive_key(raw_key) if raw_key else None
+        self._salt: bytes | None = (
+            salt.encode("utf-8") if isinstance(salt, str) else salt
+        )
 
         if db_path != ":memory:":
             abs_dir = os.path.dirname(os.path.abspath(db_path))
@@ -61,6 +84,7 @@ class VaultStore:
                 real_val TEXT NOT NULL,
                 synth_val TEXT NOT NULL,
                 created_at REAL NOT NULL,
+                real_hash TEXT,
                 PRIMARY KEY (session_id, real_val),
                 UNIQUE (session_id, synth_val)
             );
@@ -72,7 +96,33 @@ class VaultStore:
         cursor.execute(
             "CREATE INDEX IF NOT EXISTS idx_mappings_created_at ON mappings(created_at);"
         )
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_mappings_real_hash ON mappings(session_id, real_hash);"
+        )
         self._conn.commit()
+
+    def _compute_real_hash(self, session_id: str, real_val: str) -> str:
+        """Compute blind index lookup hash for real_val."""
+        if self._enc_key:
+            return blind_index(self._enc_key, session_id, real_val)
+        return hashlib.sha256(f"{session_id}:{real_val}".encode("utf-8")).hexdigest()
+
+    def _encrypt_if_enabled(self, real_val: str) -> str:
+        """Encrypt real_val if encryption_key is set."""
+        if self._enc_key:
+            return encrypt_value(real_val, self._enc_key)
+        return real_val
+
+    def _decrypt_if_enabled(self, stored_val: str) -> str:
+        """Decrypt stored real_val if encryption was used, or return as is."""
+        if self._enc_key and (
+            stored_val.startswith("enc:gcm:v1:") or stored_val.startswith("enc:std:v1:")
+        ):
+            try:
+                return decrypt_value(stored_val, self._enc_key)
+            except Exception:
+                return stored_val
+        return stored_val
 
     def _check_open(self) -> None:
         """Ensure connection has not been closed."""
@@ -101,69 +151,82 @@ class VaultStore:
             self._check_open()
             now = time.time()
             cursor = self._conn.cursor()
+            real_hash = self._compute_real_hash(session_id, real_val)
 
-            # Check if mapping already exists for (session_id, real_val)
+            # Check if mapping already exists for (session_id, real_val / real_hash)
             cursor.execute(
-                "SELECT synth_val, created_at FROM mappings WHERE session_id = ? AND real_val = ?",
-                (session_id, real_val),
+                "SELECT synth_val, created_at, real_val FROM mappings WHERE session_id = ? AND (real_hash = ? OR real_val = ?)",
+                (session_id, real_hash, real_val),
             )
             row = cursor.fetchone()
 
             if row is not None:
-                synth_val, created_at = row
+                synth_val, created_at, stored_real = row
                 if self.ttl_seconds is not None and (now - created_at) > self.ttl_seconds:
                     # Expired: prune stale mapping and regenerate
                     cursor.execute(
-                        "DELETE FROM mappings WHERE session_id = ? AND real_val = ?",
-                        (session_id, real_val),
+                        "DELETE FROM mappings WHERE session_id = ? AND (real_hash = ? OR real_val = ?)",
+                        (session_id, real_hash, stored_real),
                     )
                     self._conn.commit()
                 else:
                     return synth_val
 
-            # Compute deterministic 6-character hex hash using BLAKE2b (3 bytes = 6 hex chars)
-            short_hash = hashlib.blake2b(
-                f"{session_id}:{real_val}".encode("utf-8"),
-                digest_size=3,
-            ).hexdigest()
+            # Compute deterministic hex hash using BLAKE2b
+            if self._salt is not None:
+                short_hash = hashlib.blake2b(
+                    f"{session_id}:{real_val}".encode("utf-8"),
+                    digest_size=self.hash_size,
+                    salt=self._salt[:16].ljust(16, b"\x00"),
+                ).hexdigest()
+            else:
+                short_hash = hashlib.blake2b(
+                    f"{session_id}:{real_val}".encode("utf-8"),
+                    digest_size=self.hash_size,
+                ).hexdigest()
 
             synth_val = generator_fn(entity_type, short_hash)
+            stored_real_val = self._encrypt_if_enabled(real_val)
 
             # Defensive insert with collision resolution for UNIQUE(session_id, synth_val)
             attempt = 0
             while True:
                 try:
                     cursor.execute(
-                        "INSERT INTO mappings (session_id, entity_type, real_val, synth_val, created_at) "
-                        "VALUES (?, ?, ?, ?, ?)",
-                        (session_id, entity_type, real_val, synth_val, now),
+                        "INSERT INTO mappings (session_id, entity_type, real_val, synth_val, created_at, real_hash) "
+                        "VALUES (?, ?, ?, ?, ?, ?)",
+                        (session_id, entity_type, stored_real_val, synth_val, now, real_hash),
                     )
                     self._conn.commit()
                     return synth_val
                 except sqlite3.IntegrityError:
                     # Check if concurrent thread already created the exact mapping
                     cursor.execute(
-                        "SELECT synth_val FROM mappings WHERE session_id = ? AND real_val = ?",
-                        (session_id, real_val),
+                        "SELECT synth_val FROM mappings WHERE session_id = ? AND (real_hash = ? OR real_val = ?)",
+                        (session_id, real_hash, stored_real_val),
                     )
                     existing = cursor.fetchone()
                     if existing is not None:
                         return existing[0]
 
                     attempt += 1
-                    if attempt > 10:
+                    if attempt > 20:
                         raise RuntimeError(
                             f"Could not resolve synthetic token collision for {session_id}:{real_val}"
                         )
 
                     # Re-salt hash to generate an alternative unique token
                     alt_hash = hashlib.blake2b(
-                        f"{session_id}:{real_val}:{attempt}".encode("utf-8"),
-                        digest_size=3,
+                        f"{session_id}:{real_val}:retry_{attempt}".encode("utf-8"),
+                        digest_size=self.hash_size,
                     ).hexdigest()
                     synth_val = generator_fn(entity_type, alt_hash)
 
-    def get_session_map(self, session_id: str) -> dict[str, str]:
+    def get_session_map(
+        self,
+        session_id: str,
+        allowed_entity_types: set[str] | None = None,
+    ) -> dict[str, str]:
         """Return {synth_val: real_val} sorted by len(synth_val) descending.
 
         Sorting by length descending guarantees that longer synthetic tokens
@@ -171,6 +234,7 @@ class VaultStore:
 
         Args:
             session_id: Target session identifier.
+            allowed_entity_types: Optional set of entity types to restrict hydration to.
 
         Returns:
             Dictionary of {synthetic_value: real_value} sorted by length descending.
@@ -189,13 +253,20 @@ class VaultStore:
                 self._conn.commit()
 
             cursor.execute(
-                "SELECT synth_val, real_val FROM mappings WHERE session_id = ?",
+                "SELECT synth_val, real_val, entity_type FROM mappings WHERE session_id = ?",
                 (session_id,),
             )
             rows = cursor.fetchall()
 
-            # Sort descending by length of synthetic token
-            sorted_entries = sorted(rows, key=lambda pair: len(pair[0]), reverse=True)
+            if allowed_entity_types is not None:
+                allowed_upper = {e.upper() for e in allowed_entity_types}
+                rows = [r for r in rows if r[2].upper() in allowed_upper]
+
+            # Decrypt stored values if encrypted, then sort descending by length
+            decrypted_rows = [
+                (synth, self._decrypt_if_enabled(real)) for synth, real, _ in rows
+            ]
+            sorted_entries = sorted(decrypted_rows, key=lambda pair: len(pair[0]), reverse=True)
             return {synth: real for synth, real in sorted_entries}
 
     def clear_session(self, session_id: str) -> None:
@@ -268,7 +339,7 @@ class VaultStore:
                 )
                 self._conn.commit()
                 return None
-            return real_val
+            return self._decrypt_if_enabled(real_val)
 
     def get_synth_val(self, session_id: str, real_val: str) -> str | None:
         """Lookup synthetic value by real value in a session.
@@ -282,10 +353,11 @@ class VaultStore:
         """
         with self._lock:
             self._check_open()
+            real_hash = self._compute_real_hash(session_id, real_val)
             cursor = self._conn.cursor()
             cursor.execute(
-                "SELECT synth_val, created_at FROM mappings WHERE session_id = ? AND real_val = ?",
-                (session_id, real_val),
+                "SELECT synth_val, created_at FROM mappings WHERE session_id = ? AND (real_hash = ? OR real_val = ?)",
+                (session_id, real_hash, real_val),
             )
             row = cursor.fetchone()
             if row is None:
@@ -293,8 +365,8 @@ class VaultStore:
             synth_val, created_at = row
             if self.ttl_seconds is not None and (time.time() - created_at) > self.ttl_seconds:
                 cursor.execute(
-                    "DELETE FROM mappings WHERE session_id = ? AND real_val = ?",
-                    (session_id, real_val),
+                    "DELETE FROM mappings WHERE session_id = ? AND (real_hash = ? OR real_val = ?)",
+                    (session_id, real_hash, real_val),
                 )
                 self._conn.commit()
                 return None
@@ -343,7 +415,7 @@ class VaultStore:
                 {
                     "session_id": row[0],
                     "entity_type": row[1],
-                    "real_val": row[2],
+                    "real_val": self._decrypt_if_enabled(row[2]),
                     "synth_val": row[3],
                     "created_at": row[4],
                 }

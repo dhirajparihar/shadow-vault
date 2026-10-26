@@ -138,3 +138,32 @@ def is_synthetic(val: str) -> bool:
         return True
 
     return False
+
+
+import re
+
+SYNTHETIC_PATTERN: Final[re.Pattern[str]] = re.compile(
+    r"(?:"
+    r"u_[a-f0-9]+@shadow\.vault"
+    r"|u_[a-f0-9]+@okshadow"
+    r"|\+919000\d{6}"
+    r"|SHDWV\d{4}[A-Z]"
+    r"|400000999\d{7}"
+    r"|99990\d{7}"
+    r"|sk-sv-shadow-[a-f0-9]+"
+    r"|900-99-\d{4}"
+    r"|synth_[a-z0-9_]+"
+    r")",
+    re.IGNORECASE,
+)
+
+
+def find_synthetic_tokens(text: str) -> list[str]:
+    """Extract all synthetic token occurrences in a text string.
+
+    Used by fail-closed policies to detect unhydrated or leaked synthetic markers.
+    """
+    if not isinstance(text, str) or not text:
+        return []
+    return SYNTHETIC_PATTERN.findall(text)
+

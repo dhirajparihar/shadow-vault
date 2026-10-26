@@ -5,11 +5,11 @@
 <h1 align="center">ShadowVault</h1>
 
 <p align="center">
-  <strong>A bi-directional, format-preserving reversible PII proxy for AI agents, LangChain/LangGraph, and Model Context Protocol (MCP) tools.</strong>
+  <strong>The privacy layer for AI agent tool calls and Model Context Protocol (MCP).</strong>
 </p>
 
 <p align="center">
-  <a href="https://github.com/dhirajparihar/shadow-vault/actions"><img src="https://img.shields.io/badge/tests-56%20passed-brightgreen.svg" alt="Tests"></a>
+  <a href="https://github.com/dhirajparihar/shadow-vault/actions"><img src="https://img.shields.io/badge/tests-71%20passed-brightgreen.svg" alt="Tests"></a>
   <a href="https://pypi.org/project/shadow-vault/"><img src="https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue.svg" alt="Python Versions"></a>
   <a href="https://github.com/dhirajparihar/shadow-vault/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"></a>
   <a href="https://dhirajparihar.github.io/shadow-vault/"><img src="https://img.shields.io/badge/live%20demo-GitHub%20Pages-emerald.svg" alt="Live Demo"></a>
@@ -173,9 +173,35 @@ llm = ChatOpenAI(model="gpt-4o")
 safe_llm = ShadowVaultChatWrapper(llm=llm, vault=vault, session_id=session_id)
 ```
 
-### 2. Model Context Protocol (MCP)
+### 2. Model Context Protocol (MCP) Stdio Gateway
 
-Intercept MCP `tools/call` JSON-RPC requests and responses:
+Wrap **any** existing MCP server (Node.js, Python, Go, Rust) with a zero-code transparent privacy gateway:
+
+```bash
+# Sits between your Agent/Claude Desktop and downstream MCP servers over stdio:
+shadow-vault mcp-proxy --session-id user_42 -- uvx mcp-server-sqlite --db /path/to/data.sqlite
+```
+
+Claude Desktop / Cursor Configuration (`claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "secure-sqlite": {
+      "command": "shadow-vault",
+      "args": [
+        "mcp-proxy",
+        "--session-id", "claude_session",
+        "--fail-closed",
+        "--",
+        "uvx", "mcp-server-sqlite", "--db", "/path/to/database.db"
+      ]
+    }
+  }
+}
+```
+
+Or intercept programmatic JSON-RPC messages in Python:
 
 ```python
 from shadow_vault import ShadowVault, MCPVaultInterceptor
@@ -183,12 +209,65 @@ from shadow_vault import ShadowVault, MCPVaultInterceptor
 vault = ShadowVault()
 interceptor = MCPVaultInterceptor(vault=vault)
 
-# 1. Intercept incoming request from LLM:
+# 1. Intercept incoming tool call from model (restores real PII before tool executes):
 safe_request = interceptor.intercept_request(mcp_request, session_id="user_session")
 
-# 2. Intercept outgoing tool response before it reaches LLM:
+# 2. Intercept outgoing tool response before it reaches LLM (re-dehydrates result):
 safe_response = interceptor.intercept_response(mcp_response, session_id="user_session")
 ```
+
+---
+
+## 🔒 Enterprise Security: Envelope Encryption & Blind Indexing
+
+Unlike naive caches that store raw sensitive values in plaintext SQLite, `shadow-vault` provides **authenticated envelope encryption at rest** and **cryptographic blind indexing**:
+
+```python
+from shadow_vault import ShadowVault, VaultStore
+
+# Enable AES-256-GCM / authenticated encryption at rest:
+vault = ShadowVault(
+    db_path="./vault.db",
+    encryption_key="my-master-vault-encryption-key", # Or via SHADOW_VAULT_KEY env var
+)
+```
+
+- **Zero Plaintext on Disk:** All `real_val` entries written to SQLite are authenticated ciphertexts (`enc:gcm:v1:...` or `enc:std:v1:...`). Direct inspection of `.db` files reveals zero real PII.
+- **HMAC-SHA256 Blind Indexing:** Fast $O(1)$ database lookups without leaking plaintext or search patterns to anyone with read access to the database.
+- **Tenant & Session Salting:** Support for custom salts prevents cross-session rainbow table correlation.
+
+---
+
+## 🛡️ Context-Aware Tool Policies & Fail-Closed Protection
+
+Different agent tools require different privacy boundaries. A Slack notification tool should never receive raw credit cards, while a Stripe tool needs card details but not Aadhaar or SSNs:
+
+```python
+from shadow_vault import ShadowVault, ToolPolicy, FailClosedAction, vault_guard
+
+vault = ShadowVault(fail_closed=True)
+
+# 1. Restrict hydration by entity type:
+stripe_policy = ToolPolicy(
+    tool_name="stripe_charge",
+    allowed_entities={"CREDIT_CARD", "EMAIL"},
+    fail_closed=True,
+    fail_action=FailClosedAction.RAISE,
+)
+
+# 2. Block hydration completely for untrusted tools:
+slack_policy = ToolPolicy(
+    tool_name="post_slack_alert",
+    allow_hydration=False, # Receives format-preserving synthetic tokens only
+)
+
+@vault_guard(vault=vault, policy=slack_policy)
+def post_slack_alert(message: str, card: str, session_id: str = "default"):
+    # card is guaranteed to remain synthetic (e.g. 4000009995970590)
+    ...
+```
+
+---
 
 ### 3. OpenAI-Compatible FastAPI Proxy Server
 
