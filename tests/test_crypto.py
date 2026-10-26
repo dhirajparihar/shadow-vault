@@ -4,6 +4,7 @@ Unit tests for ShadowVault cryptographic envelope encryption and blind indexing.
 
 from __future__ import annotations
 
+import base64
 import pytest
 from shadow_vault.crypto import (
     blind_index,
@@ -45,9 +46,11 @@ def test_tampered_ciphertext_rejection() -> None:
     plaintext = "4532 0151 1283 0366"
     ciphertext = encrypt_value(plaintext, key)
 
-    # Tamper with the base64 payload
+    # Tamper with the raw binary ciphertext payload (guarantee bit-level modification)
     prefix, b64_payload = ciphertext.rsplit(":", 1)
-    tampered_b64 = b64_payload[:-2] + ("A" if b64_payload[-2] != "A" else "B") + b64_payload[-1]
+    raw = bytearray(base64.urlsafe_b64decode(b64_payload))
+    raw[len(raw) // 2] ^= 0x01
+    tampered_b64 = base64.urlsafe_b64encode(raw).decode("ascii")
     tampered_ciphertext = f"{prefix}:{tampered_b64}"
 
     with pytest.raises(

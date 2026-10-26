@@ -13,6 +13,7 @@ Tests cover:
 
 from __future__ import annotations
 
+import base64
 import concurrent.futures
 import os
 import tempfile
@@ -66,10 +67,12 @@ def test_adversarial_tampered_ciphertext_rejection() -> None:
     ciphertext = encrypt_value(plaintext, key)
 
     prefix, b64_payload = ciphertext.rsplit(":", 1)
-    # Flip multiple byte positions in the base64 payload
-    for flip_idx in [0, len(b64_payload) // 2, len(b64_payload) - 2]:
-        tampered_char = "Z" if b64_payload[flip_idx] != "Z" else "A"
-        tampered_b64 = b64_payload[:flip_idx] + tampered_char + b64_payload[flip_idx + 1 :]
+    raw = bytearray(base64.urlsafe_b64decode(b64_payload))
+    # Flip multiple byte positions in the raw binary payload (nonce, middle, tag)
+    for flip_idx in [0, len(raw) // 2, len(raw) - 1]:
+        raw_tampered = bytearray(raw)
+        raw_tampered[flip_idx] ^= 0x01
+        tampered_b64 = base64.urlsafe_b64encode(raw_tampered).decode("ascii")
         tampered_ciphertext = f"{prefix}:{tampered_b64}"
 
         with pytest.raises(ValueError, match="verification failed|corrupted|Truncated"):

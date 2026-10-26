@@ -7,6 +7,7 @@ Execute via:
 
 from __future__ import annotations
 
+import base64
 import platform
 import sys
 import time
@@ -52,10 +53,11 @@ def run_verification() -> bool:
         ciphertext = encrypt_value(plaintext, key)
         assert decrypt_value(ciphertext, key) == plaintext
 
-        # Tamper test
+        # Tamper test (flip a byte in the raw binary payload)
         prefix, b64 = ciphertext.rsplit(":", 1)
-        tampered_char = "B" if b64[-2] == "A" else "A"
-        tampered_ciphertext = f"{prefix}:{b64[:-2]}{tampered_char}{b64[-1]}"
+        raw = bytearray(base64.urlsafe_b64decode(b64))
+        raw[len(raw) // 2] ^= 0x01
+        tampered_ciphertext = f"{prefix}:{base64.urlsafe_b64encode(raw).decode('ascii')}"
         try:
             decrypt_value(tampered_ciphertext, key)
             raise AssertionError("Tampered ciphertext was NOT rejected!")
