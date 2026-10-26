@@ -171,7 +171,12 @@ def decrypt_value(ciphertext_token: str, key: bytes | str) -> str:
         nonce = raw[:12]
         ct = raw[12:]
         aesgcm = AESGCM(key_bytes)
-        plaintext_bytes = aesgcm.decrypt(nonce, ct, None)
+        try:
+            plaintext_bytes = aesgcm.decrypt(nonce, ct, None)
+        except Exception as exc:
+            raise ValueError(
+                "AES-GCM verification failed: ciphertext corrupted or key mismatch."
+            ) from exc
         return plaintext_bytes.decode("utf-8")
 
     elif ciphertext_token.startswith(CIPHER_PREFIX_STDLIB):

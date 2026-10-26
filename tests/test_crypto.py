@@ -50,7 +50,10 @@ def test_tampered_ciphertext_rejection() -> None:
     tampered_b64 = b64_payload[:-2] + ("A" if b64_payload[-2] != "A" else "B") + b64_payload[-1]
     tampered_ciphertext = f"{prefix}:{tampered_b64}"
 
-    with pytest.raises(ValueError, match="HMAC verification failed|corrupted|Truncated"):
+    with pytest.raises(
+        ValueError,
+        match="verification failed|corrupted|Truncated",
+    ):
         decrypt_value(tampered_ciphertext, key)
 
 
@@ -60,7 +63,10 @@ def test_wrong_key_rejection() -> None:
     key_bob = derive_key("bob-secret-key")
 
     ciphertext = encrypt_value("secret-card-data", key_alice)
-    with pytest.raises(ValueError, match="HMAC verification failed|corrupted"):
+    with pytest.raises(
+        ValueError,
+        match="verification failed|corrupted",
+    ):
         decrypt_value(ciphertext, key_bob)
 
 
@@ -78,3 +84,22 @@ def test_blind_index_deterministic_and_irreversible() -> None:
     assert idx1_a == idx1_b
     assert idx1_a != idx2
     assert val not in idx1_a
+
+
+def test_stdlib_fallback_cipher_explicit() -> None:
+    """Explicitly verify zero-dependency stdlib keystream fallback cipher."""
+    from shadow_vault.crypto import _stdlib_decrypt, _stdlib_encrypt
+
+    key = derive_key("fallback-key-999")
+    plaintext = "Fallback Keystream Token: 4532 0151 1283 0366"
+    token = _stdlib_encrypt(plaintext.encode("utf-8"), key)
+
+    assert token.startswith("enc:std:v1:")
+    decrypted_bytes = _stdlib_decrypt(token, key)
+    assert decrypted_bytes.decode("utf-8") == plaintext
+
+    # Tamper test on stdlib token
+    tampered = token[:-2] + ("X" if token[-2] != "X" else "Y") + token[-1]
+    with pytest.raises(ValueError, match="HMAC verification failed"):
+        _stdlib_decrypt(tampered, key)
+
