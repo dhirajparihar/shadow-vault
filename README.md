@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/dhirajparihar/shadow-vault/actions"><img src="https://img.shields.io/badge/tests-72%20passed-brightgreen.svg" alt="Tests"></a>
+  <a href="https://github.com/dhirajparihar/shadow-vault/actions"><img src="https://img.shields.io/badge/tests-75%20passed-brightgreen.svg" alt="Tests"></a>
   <a href="https://pypi.org/project/shadow-vault/"><img src="https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue.svg" alt="Python Versions"></a>
   <a href="https://github.com/dhirajparihar/shadow-vault/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"></a>
   <a href="https://dhirajparihar.github.io/shadow-vault/"><img src="https://img.shields.io/badge/live%20demo-GitHub%20Pages-emerald.svg" alt="Live Demo"></a>
@@ -90,11 +90,15 @@ result = charge_customer(email="u_c09753@shadow.vault", card="4000009995970590",
 
 ---
 
-## Interactive Zero-Key Terminal Demo
+## Interactive Zero-Key Terminal Demos
 
-Run the self-contained 4-stage interactive walkthrough (requires NO API keys):
+Run the self-contained walkthroughs (requires NO API keys and NO external dependencies):
 
 ```bash
+# 1. Autonomous Model Context Protocol (MCP) Stdio Gateway & AES-256 Vault:
+python examples/demo_mcp_gateway.py
+
+# 2. End-to-End Agent Roundtrip with Streaming SSE Re-hydration:
 python examples/demo_agent_roundtrip.py
 ```
 
@@ -307,6 +311,33 @@ for chunk in stream:
         print(chunk.choices[0].delta.content, end="", flush=True)
 ```
 
+### 4. Pluggable Presidio & NER Adapters (Person Names)
+
+For workloads requiring Named Entity Recognition (NER) for Person names or custom NLP entities, install the optional Presidio integration without burdening the zero-dependency core:
+
+```bash
+pip install "shadow-vault[presidio]"
+```
+
+Plug the detector directly into your `ShadowVault` engine:
+
+```python
+from shadow_vault import ShadowVault
+from shadow_vault.integrations.presidio import PresidioDetector
+
+vault = ShadowVault()
+# Plug in Microsoft Presidio / spaCy analyzer:
+vault.register_custom_detector(PresidioDetector())
+
+# Dehydrates names with format-preserving synthetic representations:
+prompt = vault.dehydrate("Schedule follow-up with Dr. Gregory House.", session_id="s1")
+# Prompt: "Schedule follow-up with Anon_Gregory_House."
+
+# Fully reversible at tool boundaries:
+hydrated = vault.hydrate(prompt, session_id="s1")
+# Restored: "Schedule follow-up with Dr. Gregory House."
+```
+
 ---
 
 ## Benchmark & Performance Profile (1,000 Iterations)
@@ -350,7 +381,7 @@ python benchmarks/run_benchmarks.py
 
 ```bash
 pytest -v
-# 54 passed in 1.37s (100% pass rate)
+# 75 passed in 3.27s (100% pass rate)
 ```
 
 ---

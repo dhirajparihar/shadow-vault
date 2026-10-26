@@ -4,10 +4,14 @@ Recursive dehydrate (anonymize) and hydrate (de-anonymize) proxy engine.
 
 from __future__ import annotations
 
-from typing import Any, Mapping
+from typing import Any, Callable, Iterable, Mapping
 from pydantic import BaseModel
 
-from shadow_vault.detectors import detect_entities
+from shadow_vault.detectors import (
+    DetectedEntity,
+    detect_entities,
+    resolve_overlaps,
+)
 from shadow_vault.policy import (
     FailClosedAction,
     PIILeakBlockedError,
@@ -31,6 +35,7 @@ class ShadowVault:
         salt: str | bytes | None = None,
         fail_closed: bool = False,
         policy_manager: PolicyManager | None = None,
+        custom_detectors: Iterable[Callable[[str], list[DetectedEntity]]] | None = None,
     ) -> None:
         """Initialize ShadowVault.
 
@@ -42,6 +47,7 @@ class ShadowVault:
             salt: Optional session salt for deterministic hashing.
             fail_closed: If True, blocks outbound leaks and enforces strict unmapped token policies.
             policy_manager: Optional PolicyManager for tool-level entity governance.
+            custom_detectors: Optional list of custom detector callables (e.g. PresidioDetector).
         """
         if store is not None:
             self.store = store
@@ -54,10 +60,19 @@ class ShadowVault:
             )
         self.fail_closed = fail_closed
         self.policy_manager = policy_manager or PolicyManager(default_fail_closed=fail_closed)
+        self.custom_detectors: list[Callable[[str], list[DetectedEntity]]] = (
+            list(custom_detectors) if custom_detectors else []
+        )
 
     def register_tool_policy(self, policy: ToolPolicy) -> None:
         """Register a privacy policy governing a specific tool."""
         self.policy_manager.register_policy(policy)
+
+    def register_custom_detector(
+        self, detector: Callable[[str], list[DetectedEntity]]
+    ) -> None:
+        """Register an external or custom detector (e.g. PresidioDetector)."""
+        self.custom_detectors.append(detector)
 
     def dehydrate(self, data: Any, session_id: str = "default", ttl: float | None = None) -> Any:
         """Recursively scan data and substitute real PII with format-preserving synthetic tokens.
@@ -121,6 +136,16 @@ class ShadowVault:
             return text
 
         entities = detect_entities(text)
+        if self.custom_detectors:
+            for custom_detector in self.custom_detectors:
+                try:
+                    c_entities = custom_detector(text)
+                    if c_entities:
+                        entities.extend(c_entities)
+                except Exception:
+                    pass
+            entities = resolve_overlaps(entities)
+
         if not entities:
             return text
 

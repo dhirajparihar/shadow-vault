@@ -416,6 +416,7 @@ class VaultStore:
                     "session_id": row[0],
                     "entity_type": row[1],
                     "real_val": self._decrypt_if_enabled(row[2]),
+                    "stored_val": row[2],
                     "synth_val": row[3],
                     "created_at": row[4],
                 }

@@ -88,6 +88,9 @@ def synthesize_token(entity_type: str | EntityType, short_hash: str) -> str:
         d4 = f"{int_val % 10_000:04d}"
         return f"900-99-{d4}"
 
+    elif type_str in (EntityType.PERSON.value, "PERSON", "PERSON_NAME", "NAME"):
+        return f"Anon_{short_hash.upper()}"
+
     else:
         # Fallback for arbitrary entity types
         return f"synth_{type_str.lower()}_{short_hash}"
@@ -100,6 +103,10 @@ def is_synthetic(val: str) -> bool:
     """
     if not isinstance(val, str) or not val:
         return False
+
+    # Person Name
+    if val.startswith("Anon_"):
+        return True
 
     # Email
     if val.endswith("@shadow.vault") or "@shadow.vault" in val:
@@ -152,6 +159,7 @@ SYNTHETIC_PATTERN: Final[re.Pattern[str]] = re.compile(
     r"|99990\d{7}"
     r"|sk-sv-shadow-[a-f0-9]+"
     r"|900-99-\d{4}"
+    r"|Anon_[A-F0-9]+"
     r"|synth_[a-z0-9_]+"
     r")",
     re.IGNORECASE,

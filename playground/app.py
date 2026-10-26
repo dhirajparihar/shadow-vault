@@ -23,6 +23,7 @@ if str(REPO_ROOT) not in sys.path:
 
 import streamlit as st
 
+from shadow_vault.crypto import HAS_CRYPTOGRAPHY
 from shadow_vault.detectors import (
     EntityType,
     detect_entities,
@@ -31,6 +32,7 @@ from shadow_vault.detectors import (
 )
 from shadow_vault.engine import ShadowVault
 from shadow_vault.integrations.decorators import vault_guard
+from shadow_vault.policy import FailClosedAction, PolicyManager, ToolPolicy
 from shadow_vault.store import VaultStore
 from shadow_vault.stream import StreamHydrator
 from shadow_vault.synthesizer import is_synthetic
@@ -573,7 +575,8 @@ SCENARIOS: dict[str, dict[str, Any]] = {
 # Session Initialization
 # -----------------------------------------------------------------------------
 if "store" not in st.session_state:
-    st.session_state.store = VaultStore(db_path=":memory:")
+    st.session_state._current_enc_key = "shadow-vault-master-key-0x40"
+    st.session_state.store = VaultStore(db_path=":memory:", encryption_key="shadow-vault-master-key-0x40")
     st.session_state.vault = ShadowVault(store=st.session_state.store)
 
 if "active_scenario_name" not in st.session_state:
@@ -606,9 +609,6 @@ def on_reset_prompt_click():
     st.session_state.prompt_text = scenario_prompt
     st.session_state.prompt_input_field = scenario_prompt
     st.session_state.pipeline_result = None
-
-store: VaultStore = st.session_state.store
-vault: ShadowVault = st.session_state.vault
 
 
 # -----------------------------------------------------------------------------
@@ -699,6 +699,49 @@ with st.sidebar:
     session_id = st.text_input("Session ID:", value="session_playground_01", help="Thread-scoped isolation for deterministic reverse token mappings.")
     ttl_seconds = st.slider("Vault Session TTL (sec):", min_value=60, max_value=86400, value=3600, step=60, help="In-memory SQLite automated cleanup timeout.")
 
+    st.markdown('<div class="sidebar-heading">Vault Security (v0.4.0)</div>', unsafe_allow_html=True)
+    use_encryption = st.checkbox(
+        "🔒 At-Rest AES-256 Vault",
+        value=True,
+        help="Encrypts sensitive values at rest in SQLite using authenticated AES-256-GCM + blind index lookup.",
+    )
+    vault_key = st.text_input(
+        "Master Key:",
+        value="shadow-vault-master-key-0x40",
+        type="password",
+        help="Master encryption secret for vault key derivation.",
+    )
+
+    st.markdown('<div class="sidebar-heading">Tool Privacy Policy</div>', unsafe_allow_html=True)
+    policy_action_name = st.selectbox(
+        "Fail-Closed Action:",
+        options=["REDACT (Safe)", "RAISE (Strict)", "PASS_THROUGH"],
+        index=0,
+        help="Action when an unmapped or expired token is passed to a tool.",
+    )
+
+    # Reconfigure store if encryption key has toggled
+    needed_enc_key = vault_key if use_encryption else None
+    current_enc_key = getattr(st.session_state, "_current_enc_key", "UNINITIALIZED")
+    if current_enc_key != needed_enc_key:
+        st.session_state._current_enc_key = needed_enc_key
+        st.session_state.store = VaultStore(db_path=":memory:", encryption_key=needed_enc_key)
+        st.session_state.pipeline_result = None
+
+    action_enum_map = {
+        "REDACT (Safe)": FailClosedAction.REDACT,
+        "RAISE (Strict)": FailClosedAction.RAISE,
+        "PASS_THROUGH": FailClosedAction.PASS_THROUGH,
+    }
+    action_enum = action_enum_map[policy_action_name]
+    policy_mgr = PolicyManager(
+        default_fail_closed=(action_enum != FailClosedAction.PASS_THROUGH),
+        default_fail_action=action_enum,
+    )
+    st.session_state.vault = ShadowVault(store=st.session_state.store, policy_manager=policy_mgr)
+    store: VaultStore = st.session_state.store
+    vault: ShadowVault = st.session_state.vault
+
     with st.expander("Security & Vault Purge", expanded=False):
         reveal_pii = st.checkbox("Reveal unmasked values in vault table", value=False)
         st.markdown("<hr style='margin: 0.5rem 0; border: none; border-top: 1px solid #E2E8F0;'>", unsafe_allow_html=True)
@@ -752,7 +795,7 @@ st.markdown(
             <div>
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
                     <span class="brand-title">ShadowVault</span>
-                    <span style="font-size: 0.68rem; font-weight: 600; background: #F1F5F9; color: #475569; padding: 1px 6px; border-radius: 4px; border: 1px solid #E2E8F0;">v0.3.0</span>
+                    <span style="font-size: 0.68rem; font-weight: 600; background: #F1F5F9; color: #475569; padding: 1px 6px; border-radius: 4px; border: 1px solid #E2E8F0;">v0.4.0</span>
                 </div>
                 <div class="brand-sub">Reversible, format-preserving PII proxy for AI agents · LangChain / LangGraph · MCP</div>
             </div>
@@ -1067,10 +1110,21 @@ if st.session_state.pipeline_result is not None:
             for r in records:
                 safe_real = mask_sensitive_value(r["real_val"], reveal=reveal_pii)
                 created_str = datetime.fromtimestamp(r["created_at"]).strftime("%H:%M:%S")
+                raw_stored = r.get("stored_val", safe_real)
+                if use_encryption and raw_stored.startswith("enc:"):
+                    parts = raw_stored.split(":")
+                    if len(parts) >= 4:
+                        storage_display = f"{parts[0]}:{parts[1]}:{parts[2]}:{parts[3][:10]}..."
+                    else:
+                        storage_display = raw_stored[:24] + "..."
+                else:
+                    storage_display = safe_real
+
                 table_rows.append({
                     "Entity": r["entity_type"],
                     "Synthetic Token": r["synth_val"],
-                    "Original (Safe)": safe_real,
+                    "At-Rest Storage (Vault)": storage_display,
+                    "Decrypted (Safe)": safe_real,
                     "Created": created_str,
                 })
 
@@ -1082,13 +1136,14 @@ if st.session_state.pipeline_result is not None:
         else:
             st.info("No active mappings registered for this session.")
 
-        st.markdown("<div style='font-size: 0.75rem; font-weight: 600; color: #475569; margin: 0.85rem 0 0.25rem 0;'>Architectural Guarantees:</div>", unsafe_allow_html=True)
+        st.markdown("<div style='font-size: 0.75rem; font-weight: 600; color: #475569; margin: 0.85rem 0 0.25rem 0;'>Architectural Guarantees (v0.4.0):</div>", unsafe_allow_html=True)
         st.markdown(
             """
             <div style="font-size: 0.75rem; color: #475569; line-height: 1.6; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 0.75rem;">
-                • <strong>Deterministic Salt:</strong> BLAKE2b ensures identical entities map to the same token within a session.<br>
-                • <strong>Automated Eviction:</strong> Session TTL clears keys automatically without background daemon threads.<br>
-                • <strong>Zero ML Overhead:</strong> Pure-Python compiled checksums execute in sub-millisecond latencies.
+                • <strong>At-Rest Encryption:</strong> Authenticated AES-256-GCM / BLAKE2b ciphertext with HMAC blind indexing.<br>
+                • <strong>Fail-Closed Tool Governance:</strong> Enforces zero PII leakage and configurable token rejection.<br>
+                • <strong>MCP Stdio Gateway:</strong> Transparent Stdio proxy for Claude Desktop, Cursor, and agent frameworks.<br>
+                • <strong>Presidio & NER Extensibility:</strong> Modular custom detectors with zero core ML overhead.
             </div>
             """,
             unsafe_allow_html=True,
@@ -1116,6 +1171,7 @@ else:
 [Scan Engine Active]
 Detectors: Luhn · Verhoeff · Regex · Checksums
 Tool Guard: @vault_guard parameter re-hydration
+Gateway: MCP Stdio JSON-RPC Interceptor
                     </div>
                 </div>
             </div>
@@ -1140,6 +1196,7 @@ Tool Guard: @vault_guard parameter re-hydration
 Cards: Valid Luhn Modulo 10 check
 Aadhaar: Valid Verhoeff D5 check
 Email/UPI: Valid RFC & NPCI handles
+Policy: Fail-Closed token redaction / raise
                     </div>
                 </div>
             </div>
@@ -1157,12 +1214,13 @@ Email/UPI: Valid RFC & NPCI handles
                 <div class="panel-body">
                     <div style="font-size: 0.82rem; font-weight: 600; color: #0F172A;">Session-Scoped Reverse Map</div>
                     <div style="font-size: 0.76rem; color: #475569; line-height: 1.55;">
-                        Maintains thread-safe reverse mappings in SQLite with deterministic BLAKE2b salt indices and automated TTL expiration.
+                        Maintains thread-safe reverse mappings in SQLite with deterministic BLAKE2b salt indices, authenticated AES-256 encryption, and automated TTL expiration.
                     </div>
                     <div class="code-surface" style="font-size: 0.74rem;">
-[Store Configuration]
-Storage: Thread-safe in-memory SQLite
-Hashing: BLAKE2b deterministic
+[Store Configuration v0.4.0]
+Storage: Authenticated AES-256-GCM SQLite
+Indexing: HMAC-SHA256 blind lookup
+Governance: Fail-closed tool policy
 Default TTL: 3,600s automated purge
                     </div>
                 </div>

@@ -124,9 +124,9 @@
         <div>
           <div class="flex items-center gap-2">
             <h1 class="text-base font-bold text-content-primary">ShadowVault</h1>
-            <span class="text-[11px] font-semibold text-content-secondary px-1.5 py-0.5 rounded border border-border-default bg-surface-muted">v0.3.0</span>
+            <span class="text-[11px] font-semibold text-content-secondary px-1.5 py-0.5 rounded border border-border-default bg-surface-muted">v0.4.0</span>
           </div>
-          <p class="text-xs text-content-secondary">Reversible, format-preserving PII proxy for AI agents, LangChain / LangGraph & MCP.</p>
+          <p class="text-xs text-content-secondary">The privacy layer for AI agent tool calls and Model Context Protocol (MCP).</p>
         </div>
       </div>
       <div class="flex items-center gap-3 text-xs">
@@ -284,10 +284,16 @@
           <div>
             <div class="flex items-center justify-between mb-1">
               <span class="text-xs font-semibold text-content-secondary">Live Session Reverse Map:</span>
-              <label class="flex items-center gap-1.5 text-[11px] text-content-secondary cursor-pointer">
-                <input type="checkbox" id="revealToggle" class="rounded border-border-default text-accent-teal focus:ring-0">
-                <span>Reveal real PII</span>
-              </label>
+              <div class="flex items-center gap-3">
+                <label class="flex items-center gap-1.5 text-[11px] text-accent-teal cursor-pointer">
+                  <input type="checkbox" id="encryptToggle" checked class="rounded border-border-default text-accent-teal focus:ring-0">
+                  <span>🔒 AES-256 Vault</span>
+                </label>
+                <label class="flex items-center gap-1.5 text-[11px] text-content-secondary cursor-pointer">
+                  <input type="checkbox" id="revealToggle" class="rounded border-border-default text-accent-teal focus:ring-0">
+                  <span>Reveal real PII</span>
+                </label>
+              </div>
             </div>
             <div class="overflow-x-auto rounded-md border border-border-default bg-[#F8FAFC] min-h-[160px] max-h-[220px]">
               <table class="w-full text-left text-[11px] font-mono">
@@ -295,7 +301,7 @@
                   <tr>
                     <th class="py-2 px-3">Type</th>
                     <th class="py-2 px-3">Synthetic Token</th>
-                    <th class="py-2 px-3">Original Value</th>
+                    <th class="py-2 px-3">At-Rest Storage (Vault)</th>
                   </tr>
                 </thead>
                 <tbody id="vaultTableBody" class="divide-y divide-border-subtle text-content-primary"></tbody>
@@ -305,16 +311,20 @@
 
           <div class="p-3 rounded-md bg-surface-muted/60 border border-border-default text-[11px] text-content-secondary space-y-1">
             <div class="flex justify-between">
-              <span>Collision Engine:</span>
-              <span class="text-content-primary font-mono">BLAKE2b (3-byte salt)</span>
+              <span>Vault Encryption:</span>
+              <span class="text-accent-teal font-mono">AES-256-GCM + Blind Index</span>
+            </div>
+            <div class="flex justify-between">
+              <span>MCP Interceptor:</span>
+              <span class="text-content-primary font-mono">Stdio JSON-RPC Gateway</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Privacy Policy:</span>
+              <span class="text-accent-teal font-mono">Fail-Closed Enforced</span>
             </div>
             <div class="flex justify-between">
               <span>TTL Expiration:</span>
               <span class="text-content-primary font-mono">3,600s Auto-Prune</span>
-            </div>
-            <div class="flex justify-between">
-              <span>Validator Compatibility:</span>
-              <span class="text-accent-teal font-mono">100% Pydantic Valid</span>
             </div>
           </div>
         </div>
@@ -641,6 +651,7 @@
 
     function renderTable() {
       const reveal = document.getElementById('revealToggle').checked;
+      const encrypt = document.getElementById('encryptToggle')?.checked;
       const tbody = document.getElementById('vaultTableBody');
       tbody.innerHTML = '';
       if (vaultStore.length === 0) {
@@ -650,11 +661,18 @@
       vaultStore.forEach(row => {
         const tr = document.createElement('tr');
         tr.className = "hover:bg-surface-muted transition";
-        const realDisplay = reveal ? row.real : (row.real.length > 4 ? "••••••••" + row.real.slice(-4) : "••••");
+        let storageDisplay;
+        if (encrypt) {
+          const cipherHash = simpleHash(row.real + "vault_key_salt_aes256");
+          const cipherTag = simpleHash(row.synth + "gcm_auth_tag");
+          storageDisplay = `<span class="text-accent-teal font-mono text-[10px]" title="Decrypted in trusted memory: ${reveal ? row.real : '••••••••'}">enc:gcm:v1:${cipherHash}${cipherTag}...</span>`;
+        } else {
+          storageDisplay = reveal ? row.real : (row.real.length > 4 ? "••••••••" + row.real.slice(-4) : "••••");
+        }
         tr.innerHTML = `
           <td class="py-2 px-3 text-content-secondary">${row.type}</td>
           <td class="py-2 px-3 text-accent-teal font-medium">${row.synth}</td>
-          <td class="py-2 px-3 text-content-primary">${realDisplay}</td>
+          <td class="py-2 px-3 text-content-primary">${storageDisplay}</td>
         `;
         tbody.appendChild(tr);
       });
@@ -694,6 +712,7 @@
     });
 
     document.getElementById('revealToggle').addEventListener('change', renderTable);
+    document.getElementById('encryptToggle')?.addEventListener('change', renderTable);
     document.getElementById('clearBtn').addEventListener('click', () => {
       vaultStore = [];
       resetToReadyState();

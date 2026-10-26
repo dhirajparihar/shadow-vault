@@ -21,6 +21,7 @@ class EntityType(str, Enum):
     PHONE = "PHONE"
     API_KEY = "API_KEY"
     SSN = "SSN"
+    PERSON = "PERSON"
 
 
 class DetectedEntity(BaseModel):
@@ -408,6 +409,36 @@ def detect_ssns(text: str) -> list[DetectedEntity]:
 # ============================================================================
 
 
+def resolve_overlaps(candidates: list[DetectedEntity]) -> list[DetectedEntity]:
+    """Resolve character-level overlaps among entity candidates.
+
+    Sort candidates by:
+      1. Higher specificity priority descending
+      2. Longer span length (end - start) descending
+      3. Earlier start index ascending
+    """
+    sorted_candidates = sorted(
+        candidates,
+        key=lambda entity: (
+            -SPECIFICITY_PRIORITY.get(entity.entity_type, 0),
+            -(entity.end - entity.start),
+            entity.start,
+        ),
+    )
+
+    accepted_entities: list[DetectedEntity] = []
+    for cand in sorted_candidates:
+        has_overlap = any(
+            max(cand.start, acc.start) < min(cand.end, acc.end)
+            for acc in accepted_entities
+        )
+        if not has_overlap:
+            accepted_entities.append(cand)
+
+    accepted_entities.sort(key=lambda entity: entity.start)
+    return accepted_entities
+
+
 def detect_entities(
     text: str,
     enabled_types: Iterable[EntityType | str] | None = None,
@@ -467,30 +498,4 @@ def detect_entities(
     if EntityType.PHONE.value in active_types:
         candidates.extend(detect_phones(text))
 
-    # Overlap Resolution Strategy:
-    # Sort candidates by:
-    #   1. Higher specificity priority descending
-    #   2. Longer span length (end - start) descending
-    #   3. Earlier start index ascending
-    sorted_candidates = sorted(
-        candidates,
-        key=lambda entity: (
-            -SPECIFICITY_PRIORITY.get(entity.entity_type, 0),
-            -(entity.end - entity.start),
-            entity.start,
-        ),
-    )
-
-    accepted_entities: list[DetectedEntity] = []
-    for cand in sorted_candidates:
-        # Check for any character-level overlap with already accepted entities
-        has_overlap = any(
-            max(cand.start, acc.start) < min(cand.end, acc.end)
-            for acc in accepted_entities
-        )
-        if not has_overlap:
-            accepted_entities.append(cand)
-
-    # Return final non-overlapping entities ordered by start index ascending
-    accepted_entities.sort(key=lambda entity: entity.start)
-    return accepted_entities
+    return resolve_overlaps(candidates)

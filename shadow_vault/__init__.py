@@ -53,6 +53,11 @@ try:
 except ImportError:
     pass
 
+try:
+    from shadow_vault.integrations.presidio import PresidioDetector
+except ImportError:
+    pass
+
 from shadow_vault.synthesizer import (
     SYNTHETIC_PREFIXES,
     calculate_luhn_check_digit,
@@ -61,7 +66,7 @@ from shadow_vault.synthesizer import (
     synthesize_token,
 )
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 __all__ = [
     # Engine & Store
@@ -87,6 +92,7 @@ __all__ = [
     "MCPVaultInterceptor",
     "run_mcp_stdio_proxy",
     "create_proxy_app",
+    "PresidioDetector",
     # Synthesis
     "synthesize_token",
     "is_synthetic",
