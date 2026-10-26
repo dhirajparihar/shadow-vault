@@ -17,7 +17,7 @@
 </p>
 
 <p align="center">
-  <img src="assets/demo.gif" alt="ShadowVault CLI Interactive Roundtrip Demo" width="840">
+  <img src="assets/demo-preview.png" alt="ShadowVault Interactive PII Protection & Tool Restoration" width="880">
 </p>
 
 ---
