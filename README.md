@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.svg" alt="ShadowVault Logo" width="76" height="76">
+  <img src="assets/banner.png" alt="ShadowVault Banner" width="720">
 </p>
 
 <h1 align="center">ShadowVault</h1>
