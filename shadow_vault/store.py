@@ -71,6 +71,7 @@ class VaultStore:
                 "VaultStore requires an encryption key when require_encryption=True "
                 "or SHADOW_VAULT_REQUIRE_ENCRYPTION=1."
             )
+        self.require_encryption: bool = enforce_crypto
 
         if db_path != ":memory:" and not raw_key:
             warnings.warn(
@@ -90,8 +91,18 @@ class VaultStore:
             abs_dir = os.path.dirname(os.path.abspath(db_path))
             if abs_dir:
                 os.makedirs(abs_dir, exist_ok=True)
+                if hasattr(os, "chmod") and os.name != "nt":
+                    try:
+                        os.chmod(abs_dir, 0o700)
+                    except OSError:
+                        pass
 
         self._conn = sqlite3.connect(self.db_path, check_same_thread=False)
+        if db_path != ":memory:" and hasattr(os, "chmod") and os.name != "nt":
+            try:
+                os.chmod(self.db_path, 0o600)
+            except OSError:
+                pass
 
         with self._lock:
             if db_path != ":memory:":
@@ -148,7 +159,16 @@ class VaultStore:
         ):
             try:
                 return decrypt_value(stored_val, self._enc_key)
-            except Exception:
+            except Exception as exc:
+                if self.require_encryption:
+                    raise ValueError(
+                        f"VaultStore authenticated decryption failed: {exc}. Ciphertext corrupted or key mismatch."
+                    ) from exc
+                warnings.warn(
+                    f"VaultStore decryption failed: {exc}. Ciphertext corrupted or key mismatch.",
+                    category=UserWarning,
+                    stacklevel=3,
+                )
                 return stored_val
         return stored_val
 

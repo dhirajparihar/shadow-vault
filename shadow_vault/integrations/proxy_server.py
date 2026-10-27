@@ -16,6 +16,7 @@ from shadow_vault.engine import ShadowVault
 def create_proxy_app(
     vault: ShadowVault,
     upstream_base_url: str = "https://api.openai.com/v1",
+    upstream_url: str | None = None,
     http_client: httpx.AsyncClient | None = None,
 ) -> FastAPI:
     """Create an OpenAI-compatible FastAPI proxy server application.
@@ -67,12 +68,13 @@ def create_proxy_app(
         if auth_header:
             forward_headers["authorization"] = auth_header
 
-        upstream_url = f"{upstream_base_url.rstrip('/')}/chat/completions"
+        target_base = upstream_url or upstream_base_url
+        target_url = f"{target_base.rstrip('/')}/chat/completions"
 
         if not is_stream:
             # Non-streaming JSON path
             upstream_resp = await client.post(
-                upstream_url,
+                target_url,
                 json=payload,
                 headers=forward_headers,
                 timeout=120.0,
@@ -103,7 +105,7 @@ def create_proxy_app(
             async def sse_event_stream() -> AsyncIterator[str]:
                 async with client.stream(
                     "POST",
-                    upstream_url,
+                    target_url,
                     json=payload,
                     headers=forward_headers,
                     timeout=120.0,

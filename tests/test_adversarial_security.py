@@ -227,3 +227,111 @@ def test_require_encryption_enforcement() -> None:
     finally:
         if os.path.exists(db_file):
             os.unlink(db_file)
+
+
+def test_adversarial_require_encryption_tamper_rejection() -> None:
+    """Verify that VaultStore with require_encryption=True raises ValueError on decryption failure."""
+    store = VaultStore(db_path=":memory:", encryption_key="initial-correct-key", require_encryption=True)
+    from shadow_vault.synthesizer import synthesize_token
+
+    token = store.get_or_create("s1", "EMAIL", "classified@defense.gov", synthesize_token)
+
+    # Change key to simulate wrong key / key rotation mismatch
+    store._enc_key = b"0" * 32
+    with pytest.raises(ValueError, match="authenticated decryption failed|corrupted or key mismatch"):
+        store.get_real_val("s1", token)
+
+    with pytest.raises(ValueError, match="authenticated decryption failed|corrupted or key mismatch"):
+        store.get_session_map("s1")
+
+    store.close()
+
+
+def test_detect_api_keys_skips_synthetic_tokens() -> None:
+    """Verify detect_api_keys avoids false-positive matching on shadow-vault's own synthetic tokens."""
+    from shadow_vault.detectors import detect_api_keys
+
+    synthetic_key = "sk-sv-shadow-c0975300000000000000"
+    real_key = "sk-live-0123456789abcdef0123456789"
+
+    # Synthetic key should NOT be detected as real API key
+    assert detect_api_keys(synthetic_key) == []
+
+    # Real key must still be detected
+    detected = detect_api_keys(real_key)
+    assert len(detected) == 1
+    assert detected[0].value == real_key
+
+
+def test_create_proxy_app_upstream_url_alias() -> None:
+    """Verify create_proxy_app supports both upstream_base_url and upstream_url alias."""
+    from shadow_vault.integrations.proxy_server import create_proxy_app
+
+    vault = ShadowVault()
+    app1 = create_proxy_app(vault=vault, upstream_base_url="https://api.openai.com/v1")
+    assert app1 is not None
+
+    app2 = create_proxy_app(vault=vault, upstream_url="https://api.openai.com/v1")
+    assert app2 is not None
+
+
+def test_mcp_stdio_proxy_fail_closed_blocks_leak() -> None:
+    """Verify run_mcp_stdio_proxy converts blocked PII leaks into JSON-RPC errors instead of leaking stdout."""
+    import io
+    import json
+    import sys
+    from shadow_vault.integrations.mcp_proxy import run_mcp_stdio_proxy
+    from shadow_vault.policy import PolicyManager, ToolPolicy
+
+    # Configure strict policy blocking raw returns
+    pm = PolicyManager(default_fail_closed=True)
+    policy = ToolPolicy(tool_name="leak_tool", block_raw_tool_returns=True)
+    pm.register_policy(policy)
+    vault = ShadowVault(policy_manager=pm, fail_closed=True)
+
+    # Downstream script returns raw PII
+    child_script = (
+        "import sys, json\n"
+        "line = sys.stdin.readline()\n"
+        "req = json.loads(line)\n"
+        "resp = {\n"
+        "    'jsonrpc': '2.0',\n"
+        "    'id': req['id'],\n"
+        "    'result': {'content': [{'type': 'text', 'text': 'Leaked card: 4532 0151 1283 0366'}]}\n"
+        "}\n"
+        "sys.stdout.write(json.dumps(resp) + '\\n')\n"
+        "sys.stdout.flush()\n"
+    )
+
+    client_req = {
+        "jsonrpc": "2.0",
+        "id": "req-99",
+        "method": "tools/call",
+        "params": {"name": "leak_tool", "arguments": {}},
+    }
+
+    stdin_buf = io.StringIO(json.dumps(client_req) + "\n")
+    stdout_buf = io.StringIO()
+    stderr_buf = io.StringIO()
+
+    from shadow_vault.policy import PIILeakBlockedError
+    def mock_dehydrate(data, session_id="default"):
+        raise PIILeakBlockedError("CREDIT_CARD", session_id)
+    vault.dehydrate = mock_dehydrate
+
+    exit_code = run_mcp_stdio_proxy(
+        downstream_command=[sys.executable, "-c", child_script],
+        vault=vault,
+        session_id="leak_sess",
+        stdin_stream=stdin_buf,
+        stdout_stream=stdout_buf,
+        stderr_stream=stderr_buf,
+    )
+
+    out_content = stdout_buf.getvalue()
+    # 0% raw card in stdout!
+    assert "4532 0151 1283 0366" not in out_content
+    # Instead, formatted JSON-RPC error response is sent
+    assert "error" in out_content
+    assert "-32603" in out_content
+

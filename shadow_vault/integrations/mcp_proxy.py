@@ -218,8 +218,19 @@ def run_mcp_stdio_proxy(
                     try:
                         modified_line = interceptor.intercept_json(trimmed, session_id=session_id)
                         out_stream.write(modified_line + "\n")
-                    except Exception:
-                        out_stream.write(line)
+                    except Exception as exc:
+                        if vault.fail_closed:
+                            err_resp = {
+                                "jsonrpc": "2.0",
+                                "id": None,
+                                "error": {
+                                    "code": -32603,
+                                    "message": f"ShadowVault fail-closed policy blocked response: {exc}",
+                                },
+                            }
+                            out_stream.write(json.dumps(err_resp) + "\n")
+                        else:
+                            out_stream.write(line)
                 else:
                     out_stream.write(line)
                 out_stream.flush()

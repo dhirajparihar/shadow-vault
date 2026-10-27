@@ -388,10 +388,14 @@ def detect_api_keys(text: str) -> list[DetectedEntity]:
     """Detect sensitive API keys, tokens, and Bearer authorizations."""
     entities: list[DetectedEntity] = []
     for match in API_KEY_REGEX.finditer(text):
+        val = match.group(0)
+        # Avoid flagging shadow-vault's own synthetic tokens
+        if val.startswith("sk-sv-shadow-"):
+            continue
         entities.append(
             DetectedEntity(
                 entity_type=EntityType.API_KEY.value,
-                value=match.group(0),
+                value=val,
                 start=match.start(),
                 end=match.end(),
                 score=1.0,
