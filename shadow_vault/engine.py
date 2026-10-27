@@ -19,7 +19,7 @@ from shadow_vault.policy import (
     ToolPolicy,
     UnmappedTokenError,
 )
-from shadow_vault.store import VaultStore
+from shadow_vault.store import VaultStore, _DEFAULT_TTL
 from shadow_vault.synthesizer import find_synthetic_tokens, is_synthetic, synthesize_token
 
 
@@ -30,7 +30,7 @@ class ShadowVault:
         self,
         store: VaultStore | None = None,
         db_path: str = ":memory:",
-        ttl_seconds: float | None = None,
+        ttl_seconds: float | None = _DEFAULT_TTL,  # type: ignore[assignment]
         encryption_key: str | bytes | None = None,
         salt: str | bytes | None = None,
         fail_closed: bool = False,
@@ -43,7 +43,8 @@ class ShadowVault:
         Args:
             store: Optional pre-configured VaultStore instance.
             db_path: Path to SQLite file or ':memory:' if store is not supplied.
-            ttl_seconds: Optional TTL expiration in seconds for stored mappings.
+            ttl_seconds: Optional TTL expiration in seconds for stored mappings (defaults to 3600s / 1 hour).
+                Pass None explicitly to disable TTL eviction.
             encryption_key: Optional key for authenticated AES/keystream encryption at rest.
             salt: Optional session salt for deterministic hashing.
             fail_closed: If True, blocks outbound leaks and enforces strict unmapped token policies.
@@ -383,6 +384,10 @@ class ShadowVault:
 
         return StreamHydrator(vault=self, session_id=session_id)
 
+    def session(self, session_id: str, auto_purge: bool = True) -> VaultSession:
+        """Create an ephemeral session context manager that automatically purges on exit."""
+        return VaultSession(vault=self, session_id=session_id, auto_purge=auto_purge)
+
     def close(self) -> None:
         """Close underlying VaultStore."""
         self.store.close()
@@ -392,3 +397,51 @@ class ShadowVault:
 
     def __exit__(self, exc_type: type | None, exc_val: BaseException | None, exc_tb: object | None) -> None:
         self.close()
+
+
+class VaultSession:
+    """Ephemeral session context manager for ShadowVault.
+
+    Scopes all operations to `session_id`. When used as a context manager,
+    automatically purges all mapped session data from memory and database upon exit.
+
+    Example:
+        with vault.session("run_123", auto_purge=True) as sess:
+            safe_prompt = sess.dehydrate("Charge alice@example.com on card 4532...")
+            response = agent.run(safe_prompt)
+        # All mapping keys and PII are instantly wiped upon exiting block!
+    """
+
+    def __init__(self, vault: ShadowVault, session_id: str, auto_purge: bool = True) -> None:
+        self.vault = vault
+        self.session_id = session_id
+        self.auto_purge = auto_purge
+
+    def dehydrate(self, data: Any, ttl: float | None = None) -> Any:
+        """Dehydrate data scoped to this session."""
+        return self.vault.dehydrate(data, session_id=self.session_id, ttl=ttl)
+
+    def hydrate(self, data: Any, tool_name: str | None = None) -> Any:
+        """Hydrate data scoped to this session."""
+        return self.vault.hydrate(data, session_id=self.session_id, tool_name=tool_name)
+
+    def get_map(self) -> dict[str, str]:
+        """Return {synth_val: real_val} mapping for this session."""
+        return self.vault.get_session_map(session_id=self.session_id)
+
+    def clear(self) -> None:
+        """Explicitly purge this session's mappings."""
+        self.vault.clear_session(session_id=self.session_id)
+
+    def __enter__(self) -> VaultSession:
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type | None,
+        exc_val: BaseException | None,
+        exc_tb: object | None,
+    ) -> None:
+        if self.auto_purge:
+            self.clear()
+

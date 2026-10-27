@@ -25,9 +25,10 @@ from shadow_vault.detectors import (
     is_luhn_valid,
     is_verhoeff_valid,
 )
-from shadow_vault.engine import ShadowVault
+from shadow_vault.engine import ShadowVault, VaultSession
 from shadow_vault.integrations.decorators import vault_guard
 from shadow_vault.integrations.mcp_proxy import MCPVaultInterceptor, run_mcp_stdio_proxy
+from shadow_vault.logging import ShadowVaultLoggingFilter, VaultLogFilter
 from shadow_vault.policy import (
     FailClosedAction,
     PIILeakBlockedError,
@@ -35,7 +36,7 @@ from shadow_vault.policy import (
     ToolPolicy,
     UnmappedTokenError,
 )
-from shadow_vault.store import VaultStore
+from shadow_vault.store import DEFAULT_TTL_SECONDS, VaultStore
 from shadow_vault.stream import StreamHydrator
 
 # Optional framework integrations (only loaded if dependencies installed)
@@ -71,8 +72,13 @@ __version__ = "0.4.1"
 __all__ = [
     # Engine & Store
     "ShadowVault",
+    "VaultSession",
     "VaultStore",
+    "DEFAULT_TTL_SECONDS",
     "StreamHydrator",
+    # Logging & Observability
+    "VaultLogFilter",
+    "ShadowVaultLoggingFilter",
     # Policies & Security
     "ToolPolicy",
     "PolicyManager",

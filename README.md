@@ -87,6 +87,19 @@ prompt = vault.dehydrate("Charge alice@example.com on card 4532 0151 1283 0366",
 # 3. Model executes tool using synthetic tokens -> returns sanitized output back to agent state:
 result = charge_customer(email="u_c09753@shadow.vault", card="4000009995970590", session_id="s1")
 # Result: {'status': 'PAID', 'receipt': 'u_c09753@shadow.vault', 'backup_phone': '+919000597059'}
+
+# 4. Ephemeral Agent Runs (Auto-purges memory on exit):
+with vault.session("run_123", auto_purge=True) as sess:
+    safe_prompt = sess.dehydrate("Refund alice@example.com on card 4532 0151 1283 0366")
+    # Run agent tools...
+# 100% of mapping records are wiped from RAM/SQLite upon exiting the block!
+
+# 5. Prevent Log Leaks with Drop-In Logging Filter:
+import logging
+from shadow_vault import VaultLogFilter
+
+logging.getLogger().addFilter(VaultLogFilter(vault))
+# Accidental logger.info(real_card) statements are scrubbed before reaching log sinks!
 ```
 
 ---

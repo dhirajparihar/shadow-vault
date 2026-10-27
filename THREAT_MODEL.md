@@ -77,6 +77,8 @@ ShadowVault's primary security objective is to **ensure that raw sensitive PII n
 | **T-08** | **SSE Stream Token Tearing** | Cloud model streams tokens across chunk boundaries, leaking split characters. | `StreamHydrator` lookahead buffer delays output until synthetic tokens are fully reassembled. | **Prevented** |
 | **T-09** | **Frequency Analysis / Entropy Probe** | Attacker correlates synthetic token frequencies across multiple sessions. | Nonces and BLAKE2b/HMAC session salts generate distinct tokens for identical inputs across sessions. | **Prevented** |
 | **T-10** | **Host Memory Dump** | Attacker with local root/OS access dumps Python RAM. | Out of scope for application-level library. Requires OS-level full-disk encryption and enclave isolation. | **Out of Scope** |
+| **T-11** | **Application Log Pollution / Trace Leaks** | Developer or tool accidentally executes `logger.info(real_card)` post-hydration. | `VaultLogFilter` intercepts log records and scrubs real PII to synthetic tokens before hitting disk or sinks. | **Prevented** |
+| **T-12** | **Lingering Stale PII in Abandoned Sessions** | Unpurged mapping entries persist indefinitely in SQLite memory. | Enforced 3,600s default TTL (`DEFAULT_TTL_SECONDS`) and `with vault.session(..., auto_purge=True)` context lifecycle. | **Prevented** |
 
 ---
 

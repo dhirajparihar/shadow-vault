@@ -16,6 +16,10 @@ from typing import Callable
 from shadow_vault.crypto import blind_index, decrypt_value, derive_key, encrypt_value
 
 
+DEFAULT_TTL_SECONDS: float = 3600.0  # 1 hour default
+_DEFAULT_TTL = object()
+
+
 class VaultStore:
     """Thread-safe SQLite store for bi-directional session PII mappings.
 
@@ -27,7 +31,7 @@ class VaultStore:
     def __init__(
         self,
         db_path: str = ":memory:",
-        ttl_seconds: float | None = None,
+        ttl_seconds: float | None = _DEFAULT_TTL,  # type: ignore[assignment]
         encryption_key: str | bytes | None = None,
         salt: str | bytes | None = None,
         hash_size: int = 3,
@@ -37,7 +41,8 @@ class VaultStore:
 
         Args:
             db_path: Path to SQLite file or ':memory:' for transient storage.
-            ttl_seconds: Optional time-to-live in seconds for session mappings.
+            ttl_seconds: Optional time-to-live in seconds for session mappings (defaults to 3600s / 1 hour).
+                Pass None explicitly to disable TTL eviction.
             encryption_key: Optional secret key or password for AES/authenticated at-rest encryption.
                 Can also be provided via SHADOW_VAULT_KEY or SHADOW_VAULT_ENCRYPTION_KEY env vars.
             salt: Optional session salt for deterministic token hashing.
@@ -45,7 +50,11 @@ class VaultStore:
             require_encryption: If True, raises ValueError if no valid encryption key is supplied.
         """
         self.db_path = db_path
-        self.ttl_seconds = ttl_seconds
+        if ttl_seconds is _DEFAULT_TTL:
+            env_ttl = os.environ.get("SHADOW_VAULT_DEFAULT_TTL") or os.environ.get("SHADOW_VAULT_TTL")
+            self.ttl_seconds = float(env_ttl) if env_ttl else DEFAULT_TTL_SECONDS
+        else:
+            self.ttl_seconds = ttl_seconds
         self.hash_size = hash_size
         self._lock = threading.RLock()
         self._is_closed = False
