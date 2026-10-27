@@ -53,27 +53,30 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
     :root {
-        --bg-page: #F5F7F3;
+        --bg-page: #FBFBF9;
         --surface-card: #FFFFFF;
-        --surface-subtle: #EEF3EE;
-        --surface-inset: #FAFCF9;
-        --text-main: #14251F;
-        --text-muted: #52665C;
-        --text-subtle: #718078;
-        --border-color: #E2E9E3;
-        --border-strong: #CDD9D0;
-        --teal-brand: #087F66;
-        --teal-light: #E9F6F0;
-        --teal-border: #C4E7D4;
-        --red-danger: #A44731;
-        --red-light: #FFF0E8;
-        --red-border: #F5D1C1;
-        --blue-info: #315EAB;
-        --blue-light: #EFF4FC;
-        --blue-border: #D3DFF1;
+        --surface-subtle: #F4F2FF;
+        --surface-inset: #F8FAFC;
+        --text-main: #0F141C;
+        --text-muted: #4B5565;
+        --text-subtle: #8B949E;
+        --border-color: #E7E9ED;
+        --border-strong: #CBD5E1;
+        --iris-brand: #5B4CE6;
+        --iris-light: #F4F2FF;
+        --iris-border: #DDD7FC;
+        --teal-brand: #059669;
+        --teal-light: #ECFDF5;
+        --teal-border: #A7F3D0;
+        --red-danger: #DC2626;
+        --red-light: #FEF2F2;
+        --red-border: #FECACA;
+        --blue-info: #5B4CE6;
+        --blue-light: #F4F2FF;
+        --blue-border: #DDD7FC;
     }
 
     /* Hide generic Streamlit UI chrome */
@@ -133,13 +136,13 @@ st.markdown(
     .brand-badge {
         width: 32px;
         height: 32px;
-        background: #0F766E;
+        background: #5B4CE6;
         border-radius: 7px;
         color: #FFFFFF;
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 1px 2px rgba(15, 118, 110, 0.25);
+        box-shadow: 0 1px 2px rgba(91, 76, 230, 0.25);
     }
 
     .brand-title {
@@ -785,6 +788,13 @@ with st.sidebar:
 is_active = st.session_state.pipeline_result is not None
 last_ms = st.session_state.pipeline_result.get("dehydrate_ms", 0.0) if is_active else 0.0
 
+# Top banner display (Swiss Editorial hand-drawn identity)
+banner_path = REPO_ROOT / "assets" / "banner.png"
+if banner_path.exists():
+    _, b_center, _ = st.columns([1, 2.2, 1])
+    with b_center:
+        st.image(str(banner_path), use_container_width=True)
+
 st.markdown(
     f"""
     <div class="workbench-header">
@@ -795,9 +805,9 @@ st.markdown(
             <div>
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
                     <span class="brand-title">ShadowVault</span>
-                    <span style="font-size: 0.68rem; font-weight: 600; background: #F1F5F9; color: #475569; padding: 1px 6px; border-radius: 4px; border: 1px solid #E2E8F0;">v0.4.0</span>
+                    <span style="font-size: 0.68rem; font-weight: 600; background: #F4F2FF; color: #5B4CE6; padding: 1px 6px; border-radius: 4px; border: 1px solid #DDD7FC;">v0.4.1</span>
                 </div>
-                <div class="brand-sub">Reversible, format-preserving PII proxy for AI agents · LangChain / LangGraph · MCP</div>
+                <div class="brand-sub">The privacy layer for AI agent tool calls and Model Context Protocol (MCP)</div>
             </div>
         </div>
         <div class="header-actions">
@@ -805,7 +815,7 @@ st.markdown(
                 <span class="{'status-dot-live' if is_active else 'status-dot-ready'}"></span>
                 {'Pipeline active • ' + f'{last_ms:.2f} ms' if is_active else 'Ready to protect'}
             </span>
-            <a href="https://github.com/dhirajparihar/shadow-vault" target="_blank" style="font-size: 0.75rem; color: #475569; text-decoration: none; border: 1px solid #E2E8F0; padding: 0.3rem 0.65rem; border-radius: 6px; background: #FFFFFF; font-weight: 500;">
+            <a href="https://github.com/dhirajparihar/shadow-vault" target="_blank" style="font-size: 0.75rem; color: #475569; text-decoration: none; border: 1px solid #E7E9ED; padding: 0.3rem 0.65rem; border-radius: 6px; background: #FFFFFF; font-weight: 500;">
                 GitHub ↗
             </a>
         </div>
@@ -1136,7 +1146,7 @@ if st.session_state.pipeline_result is not None:
         else:
             st.info("No active mappings registered for this session.")
 
-        st.markdown("<div style='font-size: 0.75rem; font-weight: 600; color: #475569; margin: 0.85rem 0 0.25rem 0;'>Architectural Guarantees (v0.4.0):</div>", unsafe_allow_html=True)
+        st.markdown("<div style='font-size: 0.75rem; font-weight: 600; color: #475569; margin: 0.85rem 0 0.25rem 0;'>Architectural Guarantees (v0.4.1):</div>", unsafe_allow_html=True)
         st.markdown(
             """
             <div style="font-size: 0.75rem; color: #475569; line-height: 1.6; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 0.75rem;">
@@ -1217,7 +1227,7 @@ Policy: Fail-Closed token redaction / raise
                         Maintains thread-safe reverse mappings in SQLite with deterministic BLAKE2b salt indices, authenticated AES-256 encryption, and automated TTL expiration.
                     </div>
                     <div class="code-surface" style="font-size: 0.74rem;">
-[Store Configuration v0.4.0]
+[Store Configuration v0.4.1]
 Storage: Authenticated AES-256-GCM SQLite
 Indexing: HMAC-SHA256 blind lookup
 Governance: Fail-closed tool policy
@@ -1227,6 +1237,60 @@ Default TTL: 3,600s automated purge
             </div>
             """,
             unsafe_allow_html=True,
+        )
+
+# -----------------------------------------------------------------------------
+# Documentation First (Quickstart & MCP Stdio Gateway Reference)
+# -----------------------------------------------------------------------------
+with st.expander("📚 Documentation & Integration Guides (Quickstart, MCP & LangGraph)", expanded=False):
+    doc_tab1, doc_tab2, doc_tab3 = st.tabs(["Python @vault_guard", "Claude Desktop & MCP", "Verification CLI"])
+    with doc_tab1:
+        st.code(
+            '''from shadow_vault import ShadowVault, vault_guard
+
+vault = ShadowVault()
+
+# Protect internal tool: automatically receives real PII, returns masked PII
+@vault_guard(vault=vault, session_id_arg="session_id")
+def charge_customer(email: str, card: str, session_id: str = "default") -> dict:
+    # Function executes with REAL PII: email='alice@example.com', card='4532 0151 1283 0366'
+    return {"status": "PAID", "receipt": email, "backup_phone": "+91 9876543210"}
+
+# Dehydrate safe prompt for cloud LLM:
+prompt = vault.dehydrate("Charge alice@example.com on card 4532 0151 1283 0366", session_id="s1")
+# Prompt: "Charge u_c09753@shadow.vault on card 4000009995970590"
+
+# Model executes tool with synthetic tokens -> returns sanitized output back to agent state:
+result = charge_customer(email="u_c09753@shadow.vault", card="4000009995970590", session_id="s1")
+# Result: {'status': 'PAID', 'receipt': 'u_c09753@shadow.vault', 'backup_phone': '+919000597059'}''',
+            language="python",
+        )
+    with doc_tab2:
+        st.code(
+            '''// claude_desktop_config.json (or Cursor settings)
+{
+  "mcpServers": {
+    "secure-sqlite": {
+      "command": "shadow-vault",
+      "args": [
+        "mcp-proxy",
+        "--session-id", "claude_session",
+        "--fail-closed",
+        "--",
+        "uvx", "mcp-server-sqlite", "--db", "/path/to/database.db"
+      ]
+    }
+  }
+}''',
+            language="json",
+        )
+    with doc_tab3:
+        st.code(
+            '''# Run the 6 automated security & cryptographic self-audits (zero-key):
+shadow-vault verify
+# or:
+python -m shadow_vault.verify''',
+            language="bash",
         )
 
 # -----------------------------------------------------------------------------
