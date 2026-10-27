@@ -17,6 +17,7 @@ SYNTHETIC_PREFIXES: Final[tuple[str, ...]] = (
     "99990",
     "sk-sv-shadow-",
     "900-99-",
+    "Anon_",
     "synth_",
 )
 
@@ -91,6 +92,17 @@ def synthesize_token(entity_type: str | EntityType, short_hash: str) -> str:
     elif type_str in (EntityType.PERSON.value, "PERSON", "PERSON_NAME", "NAME"):
         return f"Anon_{short_hash.upper()}"
 
+    elif type_str in (
+        EntityType.LOCATION.value,
+        EntityType.ADDRESS.value,
+        "LOCATION",
+        "ADDRESS",
+        "STREET_ADDRESS",
+        "LOC",
+    ):
+        d3 = (int_val % 899) + 101
+        return f"{d3} Shadow Vault Way"
+
     else:
         # Fallback for arbitrary entity types
         return f"synth_{type_str.lower()}_{short_hash}"
@@ -106,6 +118,10 @@ def is_synthetic(val: str) -> bool:
 
     # Person Name
     if val.startswith("Anon_"):
+        return True
+
+    # Street Address / Location
+    if "Shadow Vault Way" in val:
         return True
 
     # Email
@@ -160,6 +176,7 @@ SYNTHETIC_PATTERN: Final[re.Pattern[str]] = re.compile(
     r"|sk-sv-shadow-[a-f0-9]+"
     r"|900-99-\d{4}"
     r"|Anon_[A-F0-9]+"
+    r"|\d{1,5}\s+Shadow\s+Vault\s+Way"
     r"|synth_[a-z0-9_]+"
     r")",
     re.IGNORECASE,

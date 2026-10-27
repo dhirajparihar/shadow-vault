@@ -139,3 +139,75 @@ def test_vault_log_filter_scrubs_sensitive_records():
     finally:
         test_logger.removeFilter(log_filter)
         test_logger.removeHandler(handler)
+
+
+def test_detect_street_addresses_in_free_text():
+    """Verify zero-ML regex address detection, format-preserving synthesis, and round-trip hydration."""
+    from shadow_vault import EntityType, detect_addresses, detect_entities
+
+    raw_text = (
+        "Please deliver the package to 742 Evergreen Terrace, Springfield, "
+        "or forward invoice to 123 Main St before end of month."
+    )
+
+    # 1. Direct detector test
+    addrs = detect_addresses(raw_text)
+    assert len(addrs) == 2
+    assert addrs[0].value == "742 Evergreen Terrace"
+    assert addrs[0].entity_type == EntityType.LOCATION.value
+    assert addrs[1].value == "123 Main St"
+
+    # 2. Unified pipeline test
+    detected = detect_entities(raw_text)
+    values = [d.value for d in detected]
+    assert "742 Evergreen Terrace" in values
+    assert "123 Main St" in values
+
+    # 3. Vault dehydration and hydration test
+    vault = ShadowVault()
+    session_id = "address_test_session"
+
+    dehydrated = vault.dehydrate(raw_text, session_id=session_id)
+    assert "742 Evergreen Terrace" not in dehydrated
+    assert "123 Main St" not in dehydrated
+    assert "Shadow Vault Way" in dehydrated
+
+    # 4. Hydration restores original free-text addresses perfectly
+    hydrated = vault.hydrate(dehydrated, session_id=session_id)
+    assert hydrated == raw_text
+
+
+def test_presidio_detector_defaults_and_location():
+    """Verify PresidioDetector defaults to PERSON and LOCATION and properly maps location entities."""
+    from unittest.mock import MagicMock
+    from shadow_vault.integrations.presidio import PresidioDetector
+
+    mock_analyzer = MagicMock()
+
+    class MockRecognizerResult:
+        def __init__(self, entity_type, start, end, score):
+            self.entity_type = entity_type
+            self.start = start
+            self.end = end
+            self.score = score
+
+    # Verify defaults
+    detector = PresidioDetector(analyzer=mock_analyzer)
+    assert detector.entities == ["PERSON", "LOCATION"]
+
+    # Verify detection of both person and location in free text
+    # "John Doe" is len 8 (0:8)
+    # "Paris, France" starts at 27, ends at 40 (27:40)
+    mock_analyzer.analyze.return_value = [
+        MockRecognizerResult(entity_type="PERSON", start=0, end=8, score=0.95),
+        MockRecognizerResult(entity_type="LOCATION", start=27, end=40, score=0.90),
+    ]
+
+    text = "John Doe works remotely in Paris, France."
+    results = detector(text)
+    assert len(results) == 2
+    assert results[0].entity_type == "PERSON"
+    assert results[0].value == "John Doe"
+    assert results[1].entity_type == "LOCATION"
+    assert results[1].value == "Paris, France"
+

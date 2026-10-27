@@ -961,6 +961,7 @@ safe_llm = ShadowVaultChatWrapper(llm=llm, vault=vault, session_id=<span class="
       if (type === 'SSN') return `900-${String(d % 90 + 10)}-${String(d % 9000 + 1000)}`;
       if (type === 'AADHAAR') return `9999${String(d % 10000000).padStart(7, '0')}4`;
       if (type === 'API_KEY') return `sk-sv-shadow-${h}0000000000000000`;
+      if (type === 'LOCATION' || type === 'ADDRESS') return `${(d % 899) + 101} Shadow Vault Way`;
       return `u_${h}@shadow.vault`;
     }
 
@@ -1011,6 +1012,11 @@ safe_llm = ShadowVaultChatWrapper(llm=llm, vault=vault, session_id=<span class="
       const apiKeyRegex = /\b(?:sk-live-[A-Za-z0-9]{20,}|sk-proj-[A-Za-z0-9]{20,})\b/g;
       while ((m = apiKeyRegex.exec(text)) !== null) {
         entities.push({ type: 'API_KEY', text: m[0], start: m.index, end: apiKeyRegex.lastIndex });
+      }
+
+      const addressRegex = /\b\d{1,5}\s+(?:[A-Z0-9][a-zA-Z0-9\.\'-]+\s+){1,4}(?:Street|St|Avenue|Ave|Boulevard|Blvd|Road|Rd|Drive|Dr|Lane|Ln|Way|Court|Ct|Circle|Cir|Terrace|Ter|Parkway|Pkwy)\b/gi;
+      while ((m = addressRegex.exec(text)) !== null) {
+        entities.push({ type: 'LOCATION', text: m[0], start: m.index, end: addressRegex.lastIndex });
       }
 
       entities.sort((a, b) => a.start - b.start);
@@ -1081,6 +1087,7 @@ safe_llm = ShadowVaultChatWrapper(llm=llm, vault=vault, session_id=<span class="
         if (v.synth.startsWith('400000')) syntheticArgs.card = v.synth;
         if (v.synth.startsWith('900-')) syntheticArgs.ssn = v.synth;
         if (v.synth.startsWith('9999')) syntheticArgs.aadhaar = v.synth;
+        if (v.synth.includes('Shadow Vault Way')) syntheticArgs.address = v.synth;
       }
 
       const hydratedArgs = {};
@@ -1109,6 +1116,8 @@ safe_llm = ShadowVaultChatWrapper(llm=llm, vault=vault, session_id=<span class="
           valHtml.push(`<div class="text-emerald font-semibold">✓ <code>${v.synth}</code>: Pydantic EmailStr schema passed</div>`);
         } else if (v.type === 'PAN_CARD') {
           valHtml.push(`<div class="text-emerald font-semibold">✓ <code>${v.synth}</code>: Indian PAN format passed</div>`);
+        } else if (v.type === 'LOCATION' || v.type === 'ADDRESS') {
+          valHtml.push(`<div class="text-emerald font-semibold">✓ <code>${v.synth}</code>: Standard street address format preserved</div>`);
         }
       }
       document.getElementById('panel2Validators').innerHTML = valHtml.slice(0, 4).join('') || '<div class="text-ink-subtle">All format-preserving tokens verified.</div>';

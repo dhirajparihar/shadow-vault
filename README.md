@@ -159,8 +159,11 @@ Experience the 3-panel visual privacy playground directly in your browser with r
 | **`UPI_ID`** | Evaluated before email (`@okaxis`, `@okhdfcbank`, `@paytm`, etc.) | `dhiraj@okaxis` | `u_a81c25@okshadow` |
 | **`EMAIL`** | RFC-5322 (ignores `@shadow.vault` & UPI handles) | `alice@example.com` | `u_c09753@shadow.vault` |
 | **`PHONE`** | E.164, Indian mobile (`+91 [6-9]\d{9}`), US/NANP | `+91 9876543210` | `+919000597059` *(valid 10-digit mobile)* |
+| **`LOCATION` / `ADDRESS`** | Street suffix pattern matching (`St`, `Ave`, `Blvd`, etc.) | `742 Evergreen Terrace` | `452 Shadow Vault Way` |
 | **`SSN`** | US Social Security Number (Area/Group/Serial checks) | `219-45-7890` | `900-99-7059` *(unissued area code)* |
 | **`API_KEY`** | OpenAI `sk-...`, GitHub `ghp_...`, Google `AIza...`, Bearer | `sk-abcdef1234567890abcdef...` | `sk-sv-shadow-c0975300000000000000` |
+
+> 💡 **For Unstructured Names & Ambiguous Free-Text Entities:** ShadowVault provides a first-class Microsoft Presidio NER adapter (`from shadow_vault.integrations.presidio import PresidioDetector`). It pairs high-precision spaCy / transformer NER models with ShadowVault's format-preserving token synthesis and `@vault_guard` tool boundary hydration.
 
 ---
 

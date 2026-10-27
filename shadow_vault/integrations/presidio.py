@@ -32,7 +32,7 @@ class PresidioDetector:
             score_threshold: Minimum confidence score (0.0 to 1.0) to accept.
         """
         self.language = language
-        self.entities = list(entities) if entities is not None else ["PERSON"]
+        self.entities = list(entities) if entities is not None else ["PERSON", "LOCATION"]
         self.score_threshold = score_threshold
 
         if analyzer is not None:
@@ -53,7 +53,7 @@ class PresidioDetector:
         if self._analyzer is None:
             raise ImportError(
                 "Microsoft Presidio Analyzer is not installed.\n"
-                "To enable Presidio NER person detection, install it with:\n"
+                "To enable Presidio NER person & location detection, install it with:\n"
                 "    pip install 'shadow-vault[presidio]'\n"
                 "or:\n"
                 "    pip install presidio-analyzer"
@@ -69,9 +69,12 @@ class PresidioDetector:
         detected: list[DetectedEntity] = []
         for res in results:
             span_val = text[res.start : res.end]
-            entity_type = (
-                EntityType.PERSON.value if res.entity_type == "PERSON" else res.entity_type
-            )
+            if res.entity_type == "PERSON":
+                entity_type = EntityType.PERSON.value
+            elif res.entity_type == "LOCATION":
+                entity_type = EntityType.LOCATION.value
+            else:
+                entity_type = res.entity_type
             detected.append(
                 DetectedEntity(
                     entity_type=entity_type,

@@ -22,6 +22,8 @@ class EntityType(str, Enum):
     API_KEY = "API_KEY"
     SSN = "SSN"
     PERSON = "PERSON"
+    LOCATION = "LOCATION"
+    ADDRESS = "ADDRESS"
 
 
 class DetectedEntity(BaseModel):
@@ -207,6 +209,13 @@ PHONE_US_REGEX = re.compile(
 PHONE_E164_REGEX = re.compile(r"(?<!\d)\+[1-9]\d{0,3}[\s.-]?(?:\d[\s.-]?){6,12}\d\b")
 
 
+# Physical Street Addresses (e.g. 123 Main St, 742 Evergreen Terrace)
+STREET_ADDRESS_REGEX = re.compile(
+    r"\b\d{1,5}\s+(?:[A-Z0-9][a-zA-Z0-9\.\'-]+\s+){1,4}(?:Street|St|Avenue|Ave|Boulevard|Blvd|Road|Rd|Drive|Dr|Lane|Ln|Way|Court|Ct|Circle|Cir|Terrace|Ter|Parkway|Pkwy)\b",
+    re.IGNORECASE,
+)
+
+
 # Specificity priorities for overlap resolution (higher value = higher precedence)
 SPECIFICITY_PRIORITY: Final[dict[str, int]] = {
     EntityType.API_KEY.value: 100,
@@ -217,6 +226,9 @@ SPECIFICITY_PRIORITY: Final[dict[str, int]] = {
     EntityType.UPI_ID.value: 80,
     EntityType.EMAIL.value: 70,
     EntityType.PHONE.value: 60,
+    EntityType.LOCATION.value: 50,
+    EntityType.ADDRESS.value: 50,
+    EntityType.PERSON.value: 40,
 }
 
 
@@ -404,6 +416,22 @@ def detect_ssns(text: str) -> list[DetectedEntity]:
     return entities
 
 
+def detect_addresses(text: str) -> list[DetectedEntity]:
+    """Detect common physical street address patterns (e.g. '123 Main St', '742 Evergreen Terrace')."""
+    entities: list[DetectedEntity] = []
+    for match in STREET_ADDRESS_REGEX.finditer(text):
+        entities.append(
+            DetectedEntity(
+                entity_type=EntityType.LOCATION.value,
+                value=match.group(0),
+                start=match.start(),
+                end=match.end(),
+                score=0.9,
+            )
+        )
+    return entities
+
+
 # ============================================================================
 # Unified Detection Pipeline with Overlap Resolution
 # ============================================================================
@@ -497,5 +525,9 @@ def detect_entities(
     # 8. PHONE: Domestic and international mobile numbers
     if EntityType.PHONE.value in active_types:
         candidates.extend(detect_phones(text))
+
+    # 9. LOCATION / ADDRESS: Common street addresses
+    if EntityType.LOCATION.value in active_types or EntityType.ADDRESS.value in active_types:
+        candidates.extend(detect_addresses(text))
 
     return resolve_overlaps(candidates)
