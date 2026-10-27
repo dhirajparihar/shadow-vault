@@ -136,19 +136,14 @@ python examples/demo_mcp_gateway.py
 
 ## 🎮 Interactive Web Playground
 
-Launch the interactive 3-panel visual playground with real-time token highlighting and latency counters:
+Experience the 3-panel visual privacy playground directly in your browser with real-time token highlighting and sub-millisecond latency counters:
 
-```bash
-pip install streamlit
-streamlit run playground/app.py
-```
+🌐 **Live Demo (Zero Install):** [https://dhirajparihar.github.io/shadow-vault/](https://dhirajparihar.github.io/shadow-vault/)
 
 - **Panel 1 (User & Local MCP Tool)**: Displays raw prompt with real PII and verifies `@vault_guard` restoring real values before local tools execute.
 - **Panel 2 (What Cloud LLMs See)**: Highlights format-preserving synthetic `@shadow.vault` tokens in green over the wire.
 - **Panel 3 (Live SQLite Vault)**: Inspects the live in-memory mapping table, BLAKE2b deduplication, and sub-millisecond latency counters.
 - **Pre-Loaded Scenarios**: Includes *Fintech UPI/PAN Refund Agent*, *Healthcare Patient Booking Agent*, and *DevOps API Key Log Analyzer*.
-- 🌐 **Live Online Demo**: [https://dhirajparihar.github.io/shadow-vault/](https://dhirajparihar.github.io/shadow-vault/) *(No install needed)*
-- 💻 **Local Streamlit App**: `streamlit run playground/app.py`
 
 ---
 

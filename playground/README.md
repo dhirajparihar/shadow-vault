@@ -1,16 +1,17 @@
 # 🛡️ ShadowVault Interactive Web Playground
 
-A real-time interactive Streamlit web application demonstrating format-preserving, bi-directional PII masking and re-hydration for AI agents, LangChain/LangGraph, and Model Context Protocol (MCP) tools.
+A standalone, zero-dependency client-side web application demonstrating format-preserving, bi-directional PII masking and re-hydration for AI agents, LangChain/LangGraph, and Model Context Protocol (MCP) tools.
+
+Hosted live on GitHub Pages: [https://dhirajparihar.github.io/shadow-vault/](https://dhirajparihar.github.io/shadow-vault/)
 
 ---
 
-## Live 3-Panel Architecture
+## Architecture & Features
 
-When you click **"⚡ Run Agent Turn"**, the playground displays:
-
-- **Panel 1 (User & Local MCP Tool)**: Shows the raw input with real PII highlighted in red, and demonstrates `@vault_guard` hydrating real values right before invoking the local private Stripe, SQL, or EHR tool.
-- **Panel 2 (What Cloud LLMs See)**: Highlights every format-preserving synthetic token (`@shadow.vault`, `SHDWV...`, `4000...`, `sk-sv-...`) in green, proving zero sensitive data leaves the perimeter while preserving full schema validation.
-- **Panel 3 (Live Ephemeral SQLite Vault)**: Shows the active session mapping table with deterministic BLAKE2b hashes, TTL countdowns, and sub-millisecond latency counters.
+- **Zero Server Trust**: Executes entirely in the user's browser runtime. Zero external API calls, zero server telemetry, and 100% uptime on GitHub CDN.
+- **Panel 1 (User & Local Tool Boundary)**: Highlights detected raw PII locally in red and verifies `@vault_guard` restoring real values before local tools execute.
+- **Panel 2 (What Cloud LLMs See)**: Highlights format-preserving synthetic `@shadow.vault` tokens in green, verifies mathematical checksums (Luhn Mod 10, Verhoeff D5, PAN, Email), and animates token streaming re-hydration.
+- **Panel 3 (Live Ephemeral SQLite Vault)**: Inspects the live session reverse mapping table, authenticated AES-256-GCM cipher hashes, and sub-millisecond execution latency counters.
 
 ---
 
@@ -22,34 +23,12 @@ When you click **"⚡ Run Agent Turn"**, the playground displays:
 
 ---
 
-## How to Run Locally
+## Local Development
+
+Simply open `playground/index.html` in any modern web browser or serve it with Python's built-in HTTP server:
 
 ```bash
-# 1. Install dependencies
-pip install -r playground/requirements.txt
-pip install -e .
-
-# 2. Launch Streamlit playground
-streamlit run playground/app.py
+python -m http.server 8000 --directory playground
 ```
 
----
-
-## Deploy to Hugging Face Spaces (Free)
-
-1. Create a new Space on [Hugging Face](https://huggingface.co/new-space).
-2. Set **Space SDK** to `Streamlit`.
-3. Set **License** to `MIT`.
-4. Upload `playground/app.py` as `app.py` and `playground/requirements.txt` as `requirements.txt`.
-5. Hugging Face Spaces will automatically build and host the live interactive demo at `https://huggingface.co/spaces/<your-username>/shadow-vault`.
-
----
-
-## Deploy to Render (Free Web Service)
-
-1. Create a new Web Service on [Render](https://dashboard.render.com/).
-2. Connect your GitHub repository: `https://github.com/dhirajparihar/shadow-vault`.
-3. Configure settings:
-   - **Environment**: `Python 3`
-   - **Build Command**: `pip install -r playground/requirements.txt && pip install -e .`
-   - **Start Command**: `streamlit run playground/app.py --server.port $PORT --server.address 0.0.0.0 --server.headless true`
+Then visit `http://localhost:8000` in your browser.
